@@ -1,0 +1,23 @@
+# SiteGround excludes
+wp-content/upgrade/*
+wp-content/backup-db/*
+wp-content/cache/*
+wp-content/cache/supercache/*
+wp-content/w3tc-cache/*
+
+# WordPress core (don't track, managed by SiteGround)
+wp-admin/
+wp-includes/
+wp-*.php
+index.php
+license.txt
+readme.html
+xmlrpc.php
+
+# Uploads (too large for git)
+wp-content/uploads/*
+
+# Environment
+.env
+.htaccess
+wp-config.php

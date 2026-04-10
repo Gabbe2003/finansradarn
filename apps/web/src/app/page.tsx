@@ -197,43 +197,87 @@ export default function Home() {
       </section>
 
       {/* Editor's Picks — large feature layout */}
-      <section className="max-w-7xl mx-auto px-4 py-10">
-        <AnimatedSection>
-          <h2 className="text-xl font-black mb-1 flex items-center gap-3">
-            <span className="w-1 h-6 bg-accent rounded-full"></span>
-            Redaktionens val
-          </h2>
-          <p className="text-sm text-muted mb-6 ml-4">Utvalda fördjupningar och analyser</p>
-        </AnimatedSection>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Big feature */}
-          <AnimatedSection delay={0.1}>
-            <Link href={`/article/${articles[8].slug}`} className="group block">
-              <div className="relative aspect-[3/2] overflow-hidden bg-gray-100 mb-3">
-                <Image src={articles[8].image} alt={articles[8].title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
+      <section className="bg-surface border-y border-border py-10">
+        <div className="max-w-7xl mx-auto px-4">
+          <AnimatedSection>
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-black mb-1 flex items-center gap-3">
+                  <span className="w-1 h-6 bg-accent rounded-full"></span>
+                  Redaktionens val
+                </h2>
+                <p className="text-sm text-muted ml-4">Utvalda fördjupningar och analyser</p>
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-accent">{articles[8].category.name}</span>
-              <h3 className="font-serif text-xl font-bold text-navy mt-1 leading-snug group-hover:text-accent transition">{articles[8].title}</h3>
-              <p className="text-[13px] text-muted mt-1.5 line-clamp-2 leading-relaxed">{articles[8].excerpt}</p>
-              <p className="text-[11px] text-muted mt-2">{articles[8].author.name} | {formatDate(articles[8].publishedAt)}</p>
-            </Link>
+              <Link href="/category/analys" className="text-sm font-bold text-accent hover:text-accent-hover transition hidden sm:block">
+                Fler analyser &rarr;
+              </Link>
+            </div>
           </AnimatedSection>
-          {/* Stacked list */}
-          <div className="divide-y divide-border">
-            {articles.slice(9, 12).map((article, i) => (
-              <AnimatedSection key={article.id} delay={0.15 + i * 0.08}>
-                <Link href={`/article/${article.slug}`} className="group flex gap-4 py-4 first:pt-0">
-                  <div className="relative w-36 h-24 overflow-hidden bg-gray-100 shrink-0">
-                    <Image src={article.image} alt={article.title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Big feature with gradient overlay */}
+            <AnimatedSection delay={0.1}>
+              <Link href={`/article/${articles[8].slug}`} className="group block">
+                <div className="relative aspect-[3/2] overflow-hidden bg-gray-100">
+                  <Image src={articles[8].image} alt={articles[8].title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/25 to-transparent" />
+                  <div className="absolute top-3 left-3 bg-accent text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
+                    Redaktörens val
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[9px] font-semibold uppercase tracking-widest text-accent">{article.category.name}</span>
-                    <h3 className="font-serif text-[15px] font-semibold text-navy mt-0.5 leading-snug line-clamp-2 group-hover:text-accent transition">{article.title}</h3>
-                    <p className="text-[11px] text-muted mt-1.5">{formatDate(article.publishedAt)}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">{articles[8].category.name}</span>
+                    <h3 className="font-serif text-lg font-bold text-white mt-1 leading-snug group-hover:text-white/90 transition">{articles[8].title}</h3>
+                    <p className="text-[12px] text-white/65 mt-1 line-clamp-1 leading-relaxed">{articles[8].excerpt}</p>
                   </div>
-                </Link>
-              </AnimatedSection>
-            ))}
+                </div>
+                <p className="text-[11px] text-muted mt-2">{articles[8].author.name} · {formatDate(articles[8].publishedAt)}</p>
+              </Link>
+            </AnimatedSection>
+            {/* Right column — 2 editorial picks + plain news items */}
+            <div className="flex flex-col">
+              {/* Ranked editorial picks */}
+              <div className="divide-y divide-border">
+                {articles.slice(9, 11).map((article, i) => (
+                  <AnimatedSection key={article.id} delay={0.15 + i * 0.08}>
+                    <Link href={`/article/${article.slug}`} className="group flex items-start gap-3 py-4 first:pt-0">
+                      <span className="text-[26px] font-black text-border/60 group-hover:text-accent/30 transition tabular-nums leading-none pt-0.5 w-7 shrink-0 select-none">
+                        {i + 1}
+                      </span>
+                      <div className="relative w-32 h-20 overflow-hidden bg-gray-100 shrink-0">
+                        <Image src={article.image} alt={article.title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] font-semibold uppercase tracking-widest text-accent">{article.category.name}</span>
+                        <h3 className="font-serif text-[14px] font-semibold text-navy mt-0.5 leading-snug line-clamp-2 group-hover:text-accent transition">{article.title}</h3>
+                        <p className="text-[11px] text-muted mt-1.5">{formatDate(article.publishedAt)}</p>
+                      </div>
+                    </Link>
+                  </AnimatedSection>
+                ))}
+              </div>
+
+              {/* Divider with label */}
+              <div className="flex items-center gap-3 my-3 border-t border-border pt-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Senaste</span>
+                <div className="flex-1 border-t border-border/50" />
+              </div>
+
+              {/* Plain news items — no image, no rank */}
+              <div className="divide-y divide-border/60">
+                {articles.slice(12, 15).map((article, i) => (
+                  <AnimatedSection key={article.id} delay={0.35 + i * 0.06}>
+                    <Link href={`/article/${article.slug}`} className="group flex items-start gap-2.5 py-2.5 first:pt-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[10px] font-bold text-muted tabular-nums">{formatTime(article.publishedAt)}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-accent">{article.category.name}</span>
+                        </div>
+                        <h4 className="font-serif text-[13px] font-semibold text-navy leading-snug line-clamp-2 group-hover:text-accent transition">{article.title}</h4>
+                      </div>
+                    </Link>
+                  </AnimatedSection>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>

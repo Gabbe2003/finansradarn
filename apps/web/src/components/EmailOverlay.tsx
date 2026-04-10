@@ -3,19 +3,27 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function EmailOverlay() {
+interface Props {
+  forceOpen?: boolean;
+  onForceClose?: () => void;
+}
+
+export default function EmailOverlay({ forceOpen, onForceClose }: Props = {}) {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    // Don't show if already dismissed or subscribed
+    if (forceOpen) {
+      setShow(true);
+      return;
+    }
     const dismissed = sessionStorage.getItem("newsletter-dismissed");
     if (dismissed) return;
 
     const timer = setTimeout(() => setShow(true), 8000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [forceOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +37,7 @@ export default function EmailOverlay() {
   const handleDismiss = () => {
     setShow(false);
     sessionStorage.setItem("newsletter-dismissed", "1");
+    onForceClose?.();
   };
 
   return (
@@ -52,7 +61,7 @@ export default function EmailOverlay() {
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed inset-0 z-[101] flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
               {/* Top accent bar */}
               <div className="h-1.5 bg-gradient-to-r from-accent via-amber-400 to-accent" />
 
@@ -60,7 +69,7 @@ export default function EmailOverlay() {
                 {/* Close button */}
                 <button
                   onClick={handleDismiss}
-                  className="absolute top-4 right-4 p-2 text-muted hover:text-navy rounded-full hover:bg-gray-100 transition"
+                  className="absolute top-4 right-4 p-2 text-muted hover:text-navy rounded-full hover:bg-gray-100 transition cursor-pointer"
                   aria-label="Stäng"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">

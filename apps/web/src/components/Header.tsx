@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { categories } from "@/lib/data";
+import EmailOverlay from "@/components/EmailOverlay";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [newsletterOpen, setNewsletterOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,13 +21,19 @@ export default function Header() {
   };
 
   return (
+    <>
     <header className="sticky top-0 z-50">
       {/* Top bar — dark navy */}
       <div className="bg-navy text-white/70 text-[11px] py-1.5 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <span className="uppercase tracking-wider">{new Date().toLocaleDateString("sv-SE", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
           <div className="flex gap-4 items-center">
-            <span className="hidden sm:inline">Prenumerera</span>
+            <button
+              onClick={() => setNewsletterOpen(true)}
+              className="hidden sm:inline cursor-pointer hover:text-white transition"
+            >
+              Prenumerera
+            </button>
           </div>
         </div>
       </div>
@@ -141,5 +149,8 @@ export default function Header() {
         </nav>
       )}
     </header>
+
+    <EmailOverlay forceOpen={newsletterOpen} onForceClose={() => setNewsletterOpen(false)} />
+    </>
   );
 }

@@ -22,7 +22,7 @@ export default function PopularArticles() {
           <button
             key={tab.period}
             onClick={() => setActive(tab.period)}
-            className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition relative ${
+            className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition relative cursor-pointer ${
               active === tab.period
                 ? "text-accent"
                 : "text-muted hover:text-navy"
@@ -42,7 +42,7 @@ export default function PopularArticles() {
           <Link
             key={`${article.id}-${active}`}
             href={`/article/${article.slug}`}
-            className="group flex gap-3 py-2.5 border-b border-border/60 last:border-0"
+            className="group flex gap-3 py-2.5 border-b border-border/60 last:border-0 cursor-pointer"
           >
             <span className="text-lg font-black text-border group-hover:text-accent transition w-6 shrink-0 text-center leading-tight mt-0.5">
               {i + 1}

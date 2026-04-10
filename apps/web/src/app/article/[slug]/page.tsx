@@ -34,6 +34,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const firstHalf = paragraphs.slice(0, Math.ceil(paragraphs.length / 2));
   const secondHalf = paragraphs.slice(Math.ceil(paragraphs.length / 2));
 
+  const sameCategory = articles.filter((a) => a.id !== article.id && a.category.slug === article.category.slug);
+  const others = articles.filter((a) => a.id !== article.id && a.category.slug !== article.category.slug);
+  const relatedPosts = [...sameCategory, ...others].slice(0, 3);
+
   return (
     <article>
       {/* Article Header */}
@@ -73,6 +77,28 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               <p className="font-medium">{formatDate(article.publishedAt)}</p>
               <p>{article.readTime} min läsning</p>
             </div>
+          </div>
+
+          {/* Stats strip */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 text-[12px] text-muted border-t border-border/50 pt-3">
+            <span className="flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              {article.views.today.toLocaleString("sv-SE")} visningar idag
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              {article.views.week.toLocaleString("sv-SE")} denna vecka
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              {article.readTime} min läsning · {Math.round(article.content.split(" ").length / 200) * 200}+ ord
+            </span>
+            {article.featured && (
+              <span className="flex items-center gap-1 text-accent font-semibold ml-auto">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                Redaktörens val
+              </span>
+            )}
           </div>
         </div>
       </AnimatedSection>
@@ -155,6 +181,46 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
         </AnimatedSection>
       </div>
+
+      {/* Related posts */}
+      <section className="border-t border-border bg-surface py-10">
+        <div className="max-w-5xl mx-auto px-4">
+          <AnimatedSection>
+            <h2 className="text-lg font-black mb-6 flex items-center gap-3">
+              <span className="w-1 h-5 bg-accent rounded-full" />
+              Fler att läsa
+            </h2>
+          </AnimatedSection>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {relatedPosts.map((related, i) => (
+              <AnimatedSection key={related.id} delay={i * 0.08}>
+                <Link href={`/article/${related.slug}`} className="group block">
+                  <div className="relative aspect-video overflow-hidden bg-gray-100 mb-3">
+                    <Image
+                      src={related.image}
+                      alt={related.title}
+                      fill
+                      className="object-cover group-hover:scale-[1.03] transition duration-500"
+                    />
+                  </div>
+                  <span
+                    className="text-[9px] font-semibold uppercase tracking-widest"
+                    style={{ color: related.category.color }}
+                  >
+                    {related.category.name}
+                  </span>
+                  <h3 className="font-serif text-[14px] font-semibold text-navy mt-1 leading-snug line-clamp-2 group-hover:text-accent transition">
+                    {related.title}
+                  </h3>
+                  <p className="text-[11px] text-muted mt-1.5">
+                    {related.author.name} · {formatDate(related.publishedAt)}
+                  </p>
+                </Link>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Infinite article reader — next articles load fully */}
       <InfiniteArticleReader currentArticle={article} />

@@ -1,4 +1,5 @@
 import { WPPost, WPCategory, WPAuthor, WPMedia } from "./types";
+import type { Article } from "@/lib/types";
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || "https://finansradarn.se";
 const API = `${WP_URL}/wp-json/wp/v2`;
@@ -97,7 +98,31 @@ export function stripHtml(html: string): string {
 }
 
 export function getPostReadTime(post: WPPost): number {
+  if (post.read_time) return post.read_time;
   if (post.acf?.read_time) return post.acf.read_time;
   const words = stripHtml(post.content.rendered).split(/\s+/).length;
   return Math.max(1, Math.ceil(words / 200));
+}
+
+/** Convert a WPPost (with _embedded) to the frontend Article shape. */
+export function wpPostToArticle(post: WPPost): Article {
+  const cat = getPostCategory(post);
+  const aut = getPostAuthor(post);
+  const catId = String(post._embedded?.["wp:term"]?.[0]?.[0]?.id ?? "0");
+  const autId = String(post._embedded?.author?.[0]?.id ?? "0");
+
+  return {
+    id: String(post.id),
+    slug: post.slug,
+    title: stripHtml(post.title.rendered),
+    excerpt: stripHtml(post.excerpt.rendered),
+    content: stripHtml(post.content.rendered),
+    image: getPostImageUrl(post),
+    category: { id: catId, name: cat.name, slug: cat.slug, color: cat.color },
+    author: { id: autId, name: aut.name, avatar: aut.avatar, role: aut.role },
+    publishedAt: post.date,
+    readTime: getPostReadTime(post),
+    featured: post.featured_article ?? post.acf?.featured ?? false,
+    views: post.views ?? { today: 0, twoDays: 0, week: 0 },
+  };
 }

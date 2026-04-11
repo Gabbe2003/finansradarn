@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArticleBySlug, articles, formatDate } from "@/lib/data";
+import { getPostBySlug, getPosts, wpPostToArticle, stripHtml, getPostImageUrl } from "@/lib/wordpress/client";
 import AnimatedSection from "@/components/AnimatedSection";
 import ArticleCharts from "./ArticleCharts";
 import InfiniteArticleReader from "@/components/InfiniteArticleReader";
@@ -10,32 +11,97 @@ interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  return articles.map((article) => ({ slug: article.slug }));
+export async function generateStaticParams() {
+  const paths: { slug: string }[] = [];
+
+  try {
+    const wpPosts = await getPosts(100);
+    wpPosts.forEach((p) => paths.push({ slug: p.slug }));
+  } catch {}
+
+  // Always include mock slugs as fallback
+  articles.forEach((a) => {
+    if (!paths.find((p) => p.slug === a.slug)) paths.push({ slug: a.slug });
+  });
+
+  return paths;
 }
 
 export async function generateMetadata({ params }: ArticlePageProps) {
   const { slug } = await params;
+
+  // Try WordPress + RankMath first
+  try {
+    const wpPost = await getPostBySlug(slug);
+    if (wpPost) {
+      const seo = wpPost.seo;
+      const title = seo?.title || `${stripHtml(wpPost.title.rendered)} — FinansRadarn`;
+      const description = seo?.description || stripHtml(wpPost.excerpt.rendered);
+      const image = getPostImageUrl(wpPost);
+      const canonical = seo?.canonical || `https://finansradarn.se/article/${slug}`;
+
+      return {
+        title,
+        description,
+        alternates: { canonical },
+        openGraph: {
+          title: seo?.og_title || title,
+          description,
+          images: [{ url: seo?.og_image || image }],
+          locale: "sv_SE",
+          type: "article",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description,
+          images: [seo?.og_image || image],
+        },
+      };
+    }
+  } catch {}
+
+  // Fallback to mock data
   const article = getArticleBySlug(slug);
   if (!article) return { title: "Artikeln hittades inte" };
   return {
-    title: `${article.title} - FinansRadarn`,
+    title: `${article.title} — FinansRadarn`,
     description: article.excerpt,
+    openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      images: [{ url: article.image }],
+      locale: "sv_SE",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+      images: [article.image],
+    },
   };
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
 
+  // Try WordPress first, fall back to mock data
+  let article;
+  try {
+    const wpPost = await getPostBySlug(slug);
+    if (wpPost) article = wpPostToArticle(wpPost);
+  } catch {}
+
+  if (!article) article = getArticleBySlug(slug);
   if (!article) notFound();
 
   const paragraphs = article.content.split("\n\n");
   const firstHalf = paragraphs.slice(0, Math.ceil(paragraphs.length / 2));
   const secondHalf = paragraphs.slice(Math.ceil(paragraphs.length / 2));
 
-  const sameCategory = articles.filter((a) => a.id !== article.id && a.category.slug === article.category.slug);
-  const others = articles.filter((a) => a.id !== article.id && a.category.slug !== article.category.slug);
+  const sameCategory = articles.filter((a) => a.id !== article!.id && a.category.slug === article!.category.slug);
+  const others = articles.filter((a) => a.id !== article!.id && a.category.slug !== article!.category.slug);
   const relatedPosts = [...sameCategory, ...others].slice(0, 3);
 
   return (
@@ -106,21 +172,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       {/* Featured Image */}
       <AnimatedSection delay={0.1}>
         <div className="max-w-5xl mx-auto px-4 mb-10">
-          <div className="relative aspect-[2/1] rounded-2xl overflow-hidden shadow-2xl">
-            <Image
-              src={article.image}
-              alt={article.title}
-              fill
-              className="object-cover"
-              priority
-            />
+          <div className="relative aspect-2/1 rounded-2xl overflow-hidden shadow-2xl">
+            <Image src={article.image} alt={article.title} fill className="object-cover" priority />
           </div>
         </div>
       </AnimatedSection>
 
       {/* Article Content */}
       <div className="max-w-3xl mx-auto px-4 pb-12">
-        {/* Drop cap first paragraph */}
         <AnimatedSection delay={0.2}>
           <div className="prose prose-lg max-w-none">
             {firstHalf.map((paragraph, i) => (
@@ -136,7 +195,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           </div>
         </AnimatedSection>
 
-        {/* Inline Chart */}
         <AnimatedSection delay={0.1}>
           <div className="my-10">
             <ArticleCharts categorySlug={article.category.slug} />
@@ -146,9 +204,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <AnimatedSection>
           <div className="prose prose-lg max-w-none">
             {secondHalf.map((paragraph, i) => (
-              <p key={i} className="mb-5 leading-[1.85] text-gray-700">
-                {paragraph}
-              </p>
+              <p key={i} className="mb-5 leading-[1.85] text-gray-700">{paragraph}</p>
             ))}
           </div>
         </AnimatedSection>
@@ -196,17 +252,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               <AnimatedSection key={related.id} delay={i * 0.08}>
                 <Link href={`/article/${related.slug}`} className="group block">
                   <div className="relative aspect-video overflow-hidden bg-gray-100 mb-3">
-                    <Image
-                      src={related.image}
-                      alt={related.title}
-                      fill
-                      className="object-cover group-hover:scale-[1.03] transition duration-500"
-                    />
+                    <Image src={related.image} alt={related.title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
                   </div>
-                  <span
-                    className="text-[9px] font-semibold uppercase tracking-widest"
-                    style={{ color: related.category.color }}
-                  >
+                  <span className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: related.category.color }}>
                     {related.category.name}
                   </span>
                   <h3 className="font-serif text-[14px] font-semibold text-navy mt-1 leading-snug line-clamp-2 group-hover:text-accent transition">
@@ -222,7 +270,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
       </section>
 
-      {/* Infinite article reader — next articles load fully */}
+      {/* Infinite article reader */}
       <InfiniteArticleReader currentArticle={article} />
     </article>
   );

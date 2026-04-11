@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { articles, categories, formatDate, formatTime } from "@/lib/data";
+import { articles as mockArticles, categories, formatDate, formatTime } from "@/lib/data";
+import { getPosts, wpPostToArticle } from "@/lib/wordpress/client";
+import type { Article } from "@/lib/types";
 import MarketTicker from "@/components/MarketTicker";
 import KeyMetrics from "@/components/KeyMetrics";
 import AnimatedSection from "@/components/AnimatedSection";
@@ -29,7 +31,16 @@ const tools = [
   { name: "Break-even", href: "/verktyg/break-even", desc: "Enheter till lönsamhet" },
 ];
 
-export default function Home() {
+async function getArticles(): Promise<Article[]> {
+  try {
+    const wpPosts = await getPosts(20);
+    if (wpPosts.length > 0) return wpPosts.map(wpPostToArticle);
+  } catch {}
+  return mockArticles;
+}
+
+export default async function Home() {
+  const articles = await getArticles();
   const leadArticle = articles[0];
   const leftCards = articles.slice(1, 3);
   const feedArticles = articles.slice(3, 7);

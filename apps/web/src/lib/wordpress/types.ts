@@ -12,6 +12,25 @@ export interface WPPost {
     read_time?: number;
     featured?: boolean;
   };
+  // Exposed by finansradarn-core plugin
+  read_time?: number;
+  featured_article?: boolean;
+  views?: {
+    today: number;
+    twoDays: number;
+    week: number;
+  };
+  seo?: {
+    title: string;
+    description: string;
+    og_title: string;
+    og_image: string;
+    canonical: string;
+    robots: string[];
+    schema_type: string;
+    focus_kw: string;
+    seo_score: string;
+  };
   _embedded?: {
     "wp:featuredmedia"?: WPMedia[];
     "wp:term"?: WPCategory[][];

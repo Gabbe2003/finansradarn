@@ -1,0 +1,30 @@
+-- Fetching all active sources...
+  [Ekonomi � Google Nyheter] 50 items
+   50 unique items found
+   Limited to 10 items
+
+-- Scraping 10 articles...
+
+[1/10] Resultatet av momss�nkningen � vi blev lurade igen
+      SKIP (paywalled)
+[2/10] Br�nslepriset h�gt trots statliga skattel�ttnader
+      OK 1895 chars
+[3/10] Han har tj�nat 13 miljarder p� ett �r � p� en enda aktie
+      OK 3018 chars
+[4/10] S� oroliga ska vi vara f�r Anthropics nya ai-modell
+      OK 585 chars
+[5/10] Guld bryter m�nstret � stiger inte trots krisen
+      OK 2797 chars
+[6/10] Hotat OpenAI anklagar Musk f�r "r�ttsligt bakh�ll"
+      OK 3601 chars
+[7/10] Forskning: Tillg�ngliga AI-modeller kan hitta samma s�rbarheter som My
+      OK 583 chars
+[8/10] Varnar f�r nya AI-verktyget � kallar till krism�te: �F�r farlig�
+      OK 2599 chars
+[9/10] Pausa effektavgiften i Varberg nu!
+      SKIP (no_content)
+[10/10] D�rf�r �r Kina de stora vinnarna i Irankriget
+      OK 3373 chars
+
+-- Done: 8/10 articles scraped successfully
+-- Saved to output.json

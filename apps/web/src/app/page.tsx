@@ -1,8 +1,31 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { articles as mockArticles, categories, formatDate, formatTime } from "@/lib/data";
 import { getPosts, wpPostToArticle } from "@/lib/wordpress/client";
 import type { Article } from "@/lib/types";
+
+const HOME_TITLE = "FinansRadarn — Nyheter, analys och verktyg för din ekonomi";
+const HOME_DESCRIPTION =
+  "Senaste ekonominyheterna, marknadsanalys och kostnadsfria verktyg för bolån, sparande, skatt och pension — samlat på FinansRadarn.";
+
+export const metadata: Metadata = {
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    locale: "sv_SE",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+  },
+};
 import MarketTicker from "@/components/MarketTicker";
 import KeyMetrics from "@/components/KeyMetrics";
 import AnimatedSection from "@/components/AnimatedSection";
@@ -12,24 +35,7 @@ import InfiniteArticles from "@/components/InfiniteArticles";
 import PopularArticles from "@/components/PopularArticles";
 import NewsTicker from "@/components/NewsTicker";
 import NewsletterBanner from "@/components/NewsletterBanner";
-
-const tools = [
-  { name: "Bolåneberäknare", href: "/verktyg/bolanekalkylator", desc: "Månadskostnad & ränta" },
-  { name: "Sparandeberäknare", href: "/verktyg/sparandekalkylator", desc: "Ränta-på-ränta" },
-  { name: "Inflationsberäknare", href: "/verktyg/inflationskalkylator", desc: "Köpkraft över tid" },
-  { name: "Löneberäknare", href: "/verktyg/lonekalkylator", desc: "Nettolön efter skatt" },
-  { name: "Ränta-på-ränta", href: "/verktyg/ranta-pa-ranta", desc: "Exponentiell tillväxt" },
-  { name: "Pensionsberäknare", href: "/verktyg/pensionskalkylator", desc: "Pensionsgap & kapital" },
-  { name: "ISK-skatt", href: "/verktyg/isk-skatt", desc: "Schablonsskatt ISK" },
-  { name: "Skuldavbetalning", href: "/verktyg/skuldavbetalning", desc: "Tid till skuldfrihet" },
-  { name: "ROI-beräknare", href: "/verktyg/roi-beraknare", desc: "Avkastning & CAGR" },
-  { name: "Utdelningar", href: "/verktyg/utdelningskalkylator", desc: "Utdelningsinkomst" },
-  { name: "FIRE", href: "/verktyg/fire-kalkylator", desc: "Ekonomisk frihet" },
-  { name: "Hyra vs Köpa", href: "/verktyg/hyra-vs-kopa", desc: "Jämför boendekostnad" },
-  { name: "Fondavgifter", href: "/verktyg/fondavgifter", desc: "Avgifternas påverkan" },
-  { name: "Budgetplanerare", href: "/verktyg/budget", desc: "Planera din budget" },
-  { name: "Break-even", href: "/verktyg/break-even", desc: "Enheter till lönsamhet" },
-];
+import ToolsShowcase from "@/components/ToolsShowcase";
 
 async function getArticles(): Promise<Article[]> {
   try {
@@ -71,6 +77,7 @@ export default async function Home() {
                     src={leadArticle.image}
                     alt={leadArticle.title}
                     fill
+                    sizes="(min-width: 1024px) 42vw, 100vw"
                     className="object-cover group-hover:scale-[1.03] transition duration-500"
                     priority
                   />
@@ -94,6 +101,7 @@ export default async function Home() {
                         src={article.image}
                         alt={article.title}
                         fill
+                        sizes="128px"
                         className="object-cover group-hover:scale-[1.03] transition duration-500"
                       />
                     </div>
@@ -132,6 +140,7 @@ export default async function Home() {
                           src={article.image}
                           alt={article.title}
                           fill
+                          sizes="(min-width: 1024px) 33vw, 100vw"
                           className="object-cover group-hover:scale-[1.03] transition duration-500"
                         />
                       </div>
@@ -174,38 +183,8 @@ export default async function Home() {
       {/* Divider */}
       <div className="max-w-7xl mx-auto px-4"><div className="border-b border-border" /></div>
 
-      {/* Tool Shortcuts */}
-      <section id="verktyg" className="bg-surface border-y border-border py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <AnimatedSection>
-            <h2 className="text-xl font-black mb-1 flex items-center gap-3">
-              <span className="w-1 h-6 bg-accent rounded-full"></span>
-              Ekonomiska verktyg
-            </h2>
-            <p className="text-sm text-muted mb-5 ml-4">Snabbberäkna ränta, sparande, skatt och inflation</p>
-          </AnimatedSection>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-            {tools.map((tool, i) => (
-              <AnimatedSection key={tool.href} delay={i * 0.04}>
-                <Link
-                  href={tool.href}
-                  className="group block p-3.5 bg-white rounded-xl border border-border hover:border-accent/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-                >
-                  <p className="font-bold text-sm text-navy group-hover:text-accent transition truncate">{tool.name}</p>
-                  <p className="text-[11px] text-muted truncate mt-0.5">{tool.desc}</p>
-                </Link>
-              </AnimatedSection>
-            ))}
-          </div>
-          <AnimatedSection delay={0.5}>
-            <div className="mt-4 text-center">
-              <Link href="/verktyg" className="text-sm font-bold text-accent hover:text-accent-hover transition">
-                Visa alla verktyg &rarr;
-              </Link>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+      {/* Tool Shortcuts — interactive showcase with live mortgage preview */}
+      <ToolsShowcase />
 
       {/* Editor's Picks — large feature layout */}
       <section className="bg-surface border-y border-border py-10">
@@ -229,7 +208,7 @@ export default async function Home() {
             <AnimatedSection delay={0.1}>
               <Link href={`/article/${articles[8].slug}`} className="group block">
                 <div className="relative aspect-[3/2] overflow-hidden bg-gray-100">
-                  <Image src={articles[8].image} alt={articles[8].title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
+                  <Image src={articles[8].image} alt={articles[8].title} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover group-hover:scale-[1.03] transition duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/25 to-transparent" />
                   <div className="absolute top-3 left-3 bg-accent text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
                     Redaktörens val
@@ -254,7 +233,7 @@ export default async function Home() {
                         {i + 1}
                       </span>
                       <div className="relative w-32 h-20 overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={article.image} alt={article.title} fill className="object-cover group-hover:scale-[1.03] transition duration-500" />
+                        <Image src={article.image} alt={article.title} fill sizes="128px" className="object-cover group-hover:scale-[1.03] transition duration-500" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-[9px] font-semibold uppercase tracking-widest text-accent">{article.category.name}</span>

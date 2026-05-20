@@ -21,7 +21,7 @@ export default function EmailOverlay({ forceOpen, onForceClose }: Props = {}) {
     const dismissed = sessionStorage.getItem("newsletter-dismissed");
     if (dismissed) return;
 
-    const timer = setTimeout(() => setShow(true), 8000);
+    const timer = setTimeout(() => setShow(true), 20000);
     return () => clearTimeout(timer);
   }, [forceOpen]);
 
@@ -59,9 +59,18 @@ export default function EmailOverlay({ forceOpen, onForceClose }: Props = {}) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleDismiss();
+            }}
             className="fixed inset-0 z-[101] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="newsletter-title"
           >
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
               {/* Top accent bar */}
               <div className="h-1.5 bg-gradient-to-r from-accent via-amber-400 to-accent" />
 
@@ -97,7 +106,7 @@ export default function EmailOverlay({ forceOpen, onForceClose }: Props = {}) {
                       <div className="w-14 h-14 bg-navy rounded-xl flex items-center justify-center mx-auto mb-4">
                         <span className="text-accent font-black text-2xl">E</span>
                       </div>
-                      <h3 className="text-2xl font-black text-navy mb-2">Morgonbrevet</h3>
+                      <h3 id="newsletter-title" className="text-2xl font-black text-navy mb-2">Morgonbrevet</h3>
                       <p className="text-muted text-sm leading-relaxed">
                         Få de viktigaste ekonomiska nyheterna, marknadsdata och analyser levererade till din inkorg varje morgon kl 07:00.
                       </p>

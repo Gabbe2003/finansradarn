@@ -10,6 +10,7 @@ export interface Article {
   publishedAt: string;
   readTime: number;
   featured: boolean;
+  breaking?: boolean;
   views: ViewStats;
 }
 
@@ -31,4 +32,6 @@ export interface Author {
   name: string;
   avatar: string;
   role: string;
+  slug?: string;
+  bio?: string;
 }

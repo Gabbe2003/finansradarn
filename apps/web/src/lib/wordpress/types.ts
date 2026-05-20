@@ -5,16 +5,19 @@ export interface WPPost {
   excerpt: { rendered: string };
   content: { rendered: string };
   date: string;
+  modified?: string;
   featured_media: number;
   categories: number[];
   author: number;
   acf?: {
     read_time?: number;
     featured?: boolean;
+    breaking?: boolean;
   };
   // Exposed by finansradarn-core plugin
   read_time?: number;
   featured_article?: boolean;
+  breaking?: boolean;
   views?: {
     today: number;
     twoDays: number;

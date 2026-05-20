@@ -112,6 +112,7 @@ function FullArticle({ article, isFirst }: { article: Article; isFirst: boolean 
             src={article.image}
             alt={article.title}
             fill
+            sizes="(min-width: 1024px) 1024px, 100vw"
             className="object-cover"
           />
         </div>
@@ -186,6 +187,7 @@ function FullArticle({ article, isFirst }: { article: Article; isFirst: boolean 
                     src={related.image}
                     alt={related.title}
                     fill
+                    sizes="(min-width: 640px) 33vw, 100vw"
                     className="object-cover group-hover:scale-[1.03] transition duration-500"
                   />
                 </div>

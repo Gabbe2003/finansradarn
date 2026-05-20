@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { categories } from "@/lib/data";
 
 export default function Footer() {
@@ -13,14 +14,15 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-accent rounded flex items-center justify-center">
-                <span className="text-navy font-black text-lg">F</span>
-              </div>
-              <span className="text-xl font-black tracking-tight">
-                FINANS<span className="text-accent">RADARN</span>
-              </span>
-            </div>
+            <Link href="/" aria-label="FinansRadarn — startsida" className="inline-flex mb-4">
+              <Image
+                src="/finansradarn-logo.svg"
+                alt="FinansRadarn"
+                width={520}
+                height={80}
+                className="h-9 w-auto"
+              />
+            </Link>
             <p className="text-white/40 text-sm leading-relaxed">
               Din finansradar. Nyheter, analys och verktyg för din ekonomi.
             </p>

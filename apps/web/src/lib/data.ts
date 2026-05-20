@@ -12,11 +12,46 @@ export const categories: Category[] = [
 ];
 
 export const authors: Author[] = [
-  { id: "1", name: "Anna Lindqvist", avatar: "https://i.pravatar.cc/150?img=1", role: "Ekonomiredaktör" },
-  { id: "2", name: "Erik Johansson", avatar: "https://i.pravatar.cc/150?img=3", role: "Statistikanalytiker" },
-  { id: "3", name: "Maria Bergström", avatar: "https://i.pravatar.cc/150?img=5", role: "Makroekonom" },
-  { id: "4", name: "Karl Svensson", avatar: "https://i.pravatar.cc/150?img=7", role: "Finanskorrespondent" },
-  { id: "5", name: "Sofia Andersson", avatar: "https://i.pravatar.cc/150?img=9", role: "Konjunkturanalytiker" },
+  {
+    id: "1",
+    name: "Anna Lindqvist",
+    slug: "anna-lindqvist",
+    avatar: "https://i.pravatar.cc/150?img=1",
+    role: "Ekonomiredaktör",
+    bio: "Anna leder FinansRadarns ekonomiredaktion och har över 15 års erfarenhet av att bevaka svensk makroekonomi, penningpolitik och Riksbankens beslut. Tidigare på SvD Näringsliv och Dagens Industri.",
+  },
+  {
+    id: "2",
+    name: "Erik Johansson",
+    slug: "erik-johansson",
+    avatar: "https://i.pravatar.cc/150?img=3",
+    role: "Statistikanalytiker",
+    bio: "Erik gräver i SCB:s siffror och förklarar vad de betyder för din ekonomi. Civilekonom från Handelshögskolan med fokus på arbetsmarknads- och konsumentstatistik.",
+  },
+  {
+    id: "3",
+    name: "Maria Bergström",
+    slug: "maria-bergstrom",
+    avatar: "https://i.pravatar.cc/150?img=5",
+    role: "Makroekonom",
+    bio: "Maria analyserar globala penningpolitiska trender och deras genomslag på den svenska ekonomin. Doktor i nationalekonomi från Stockholms universitet.",
+  },
+  {
+    id: "4",
+    name: "Karl Svensson",
+    slug: "karl-svensson",
+    avatar: "https://i.pravatar.cc/150?img=7",
+    role: "Finanskorrespondent",
+    bio: "Karl bevakar Stockholmsbörsen, räntemarknaden och valutarörelser. Har tidigare jobbat som aktiestrateg på en av storbankerna.",
+  },
+  {
+    id: "5",
+    name: "Sofia Andersson",
+    slug: "sofia-andersson",
+    avatar: "https://i.pravatar.cc/150?img=9",
+    role: "Konjunkturanalytiker",
+    bio: "Sofia följer konjunktursignaler, KI-barometern och företagens framtidstro. Bakgrund som ekonom på Konjunkturinstitutet.",
+  },
 ];
 
 export const articles: Article[] = [
@@ -395,6 +430,14 @@ export function getArticlesByCategory(categorySlug: string): Article[] {
 
 export function getFeaturedArticles(): Article[] {
   return articles.filter((a) => a.featured);
+}
+
+export function getAuthorBySlug(slug: string): Author | undefined {
+  return authors.find((a) => a.slug === slug);
+}
+
+export function getArticlesByAuthor(authorId: string): Article[] {
+  return articles.filter((a) => a.author.id === authorId);
 }
 
 export function searchArticles(query: string): Article[] {

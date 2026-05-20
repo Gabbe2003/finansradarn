@@ -17,6 +17,7 @@ export default function ArticleCard({ article, variant = "default" }: ArticleCar
             src={article.image}
             alt={article.title}
             fill
+            sizes="112px"
             className="object-cover group-hover:scale-105 transition duration-300"
           />
         </div>
@@ -55,6 +56,7 @@ export default function ArticleCard({ article, variant = "default" }: ArticleCar
           src={article.image}
           alt={article.title}
           fill
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover group-hover:scale-[1.03] transition duration-500"
         />
       </div>

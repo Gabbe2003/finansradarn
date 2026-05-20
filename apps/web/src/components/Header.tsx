@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { categories } from "@/lib/data";
 import EmailOverlay from "@/components/EmailOverlay";
@@ -41,16 +42,17 @@ export default function Header() {
       {/* Main header — deep navy */}
       <div className="bg-navy border-b border-accent/20">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-accent rounded flex items-center justify-center">
-              <span className="text-navy font-black text-xl">F</span>
-            </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight leading-none text-white">
-                FINANS<span className="text-accent">RADARN</span>
-              </h1>
-              <p className="text-[9px] text-white/40 uppercase tracking-[0.25em] mt-0.5">Nyheter &middot; Analys &middot; Verktyg</p>
-            </div>
+          <Link href="/" aria-label="FinansRadarn — startsida" className="flex items-center group">
+            <Image
+              src="/finansradarn-logo.svg"
+              alt="FinansRadarn"
+              width={520}
+              height={80}
+              priority
+              loading="eager"
+              fetchPriority="high"
+              className="h-10 sm:h-11 w-auto group-hover:opacity-90 transition"
+            />
           </Link>
 
           <div className="flex items-center gap-2">

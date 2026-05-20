@@ -84,13 +84,28 @@ export function getPostCategory(post: WPPost): { name: string; slug: string; col
   };
 }
 
-export function getPostAuthor(post: WPPost): { name: string; avatar: string; role: string } {
+export function getPostAuthor(post: WPPost): { name: string; avatar: string; role: string; slug: string; bio: string } {
   const author = post._embedded?.author?.[0];
   return {
     name: author?.name || "Redaktionen",
     avatar: author?.avatar_urls?.["96"] || "https://i.pravatar.cc/150?img=1",
     role: author?.acf?.role || "Redaktör",
+    slug: author?.slug || "redaktionen",
+    bio: author?.description || "",
   };
+}
+
+export async function getAuthorBySlug(slug: string): Promise<WPAuthor | null> {
+  const users = await fetchAPI<WPAuthor[]>("users", { slug });
+  return users[0] || null;
+}
+
+export async function getPostsByAuthor(authorId: number, perPage = 20): Promise<WPPost[]> {
+  return fetchAPI<WPPost[]>("posts", {
+    author: String(authorId),
+    per_page: String(perPage),
+    _embed: "wp:featuredmedia,wp:term,author",
+  });
 }
 
 export function stripHtml(html: string): string {
@@ -119,10 +134,11 @@ export function wpPostToArticle(post: WPPost): Article {
     content: stripHtml(post.content.rendered),
     image: getPostImageUrl(post),
     category: { id: catId, name: cat.name, slug: cat.slug, color: cat.color },
-    author: { id: autId, name: aut.name, avatar: aut.avatar, role: aut.role },
+    author: { id: autId, name: aut.name, avatar: aut.avatar, role: aut.role, slug: aut.slug, bio: aut.bio },
     publishedAt: post.date,
     readTime: getPostReadTime(post),
     featured: post.featured_article ?? post.acf?.featured ?? false,
+    breaking: post.breaking ?? post.acf?.breaking ?? false,
     views: post.views ?? { today: 0, twoDays: 0, week: 0 },
   };
 }

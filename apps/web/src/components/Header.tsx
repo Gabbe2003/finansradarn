@@ -152,7 +152,7 @@ export default function Header() {
       )}
     </header>
 
-    <EmailOverlay forceOpen={newsletterOpen} onForceClose={() => setNewsletterOpen(false)} />
+    <EmailOverlay autoOpen={false} forceOpen={newsletterOpen} onForceClose={() => setNewsletterOpen(false)} />
     </>
   );
 }

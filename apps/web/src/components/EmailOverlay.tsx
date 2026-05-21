@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Props {
   forceOpen?: boolean;
   onForceClose?: () => void;
+  autoOpen?: boolean;
 }
 
-export default function EmailOverlay({ forceOpen, onForceClose }: Props = {}) {
+export default function EmailOverlay({ forceOpen, onForceClose, autoOpen = true }: Props = {}) {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -18,12 +19,13 @@ export default function EmailOverlay({ forceOpen, onForceClose }: Props = {}) {
       setShow(true);
       return;
     }
+    if (!autoOpen) return;
     const dismissed = sessionStorage.getItem("newsletter-dismissed");
     if (dismissed) return;
 
     const timer = setTimeout(() => setShow(true), 20000);
     return () => clearTimeout(timer);
-  }, [forceOpen]);
+  }, [forceOpen, autoOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -29,11 +29,19 @@ import {
 
 const LIVE = !!process.env.NEXT_PUBLIC_WP_URL;
 
+// Surface WP fetch failures in Vercel function logs. Each helper still falls
+// back to mock data so the site stays up, but errors no longer disappear.
+function logWp(scope: string, err: unknown): void {
+  console.error(`[content:${scope}] WP fetch failed:`, err);
+}
+
 export async function fetchArticles(perPage = 20): Promise<Article[]> {
   try {
     const wp = await getPosts(perPage);
     if (wp.length > 0) return wp.map(wpPostToArticle);
-  } catch {}
+  } catch (err) {
+    logWp("fetchArticles", err);
+  }
   return mockArticles.slice(0, perPage);
 }
 
@@ -50,7 +58,9 @@ export async function fetchArticlesByCategory(
         articles: wpPosts.map(wpPostToArticle),
       };
     }
-  } catch {}
+  } catch (err) {
+    logWp("fetchArticlesByCategory", err);
+  }
   const mockCat = mockCategories.find((c) => c.slug === slug) ?? null;
   return {
     category: mockCat,
@@ -70,7 +80,9 @@ export async function fetchAuthorBySlug(
         articles: wpPosts.map(wpPostToArticle),
       };
     }
-  } catch {}
+  } catch (err) {
+    logWp("fetchAuthorBySlug", err);
+  }
   const mockA = mockGetAuthorBySlug(slug) ?? null;
   return {
     author: mockA,
@@ -82,7 +94,9 @@ export async function fetchCategories(): Promise<Category[]> {
   try {
     const wp = await wpGetCategories();
     if (wp.length > 0) return wp.map(wpCategoryToCategory);
-  } catch {}
+  } catch (err) {
+    logWp("fetchCategories", err);
+  }
   return mockCategories;
 }
 
@@ -90,7 +104,9 @@ export async function fetchAuthors(): Promise<Author[]> {
   try {
     const wp = await wpGetAuthors();
     if (wp.length > 0) return wp.map(wpAuthorToAuthor);
-  } catch {}
+  } catch (err) {
+    logWp("fetchAuthors", err);
+  }
   return mockAuthors;
 }
 
@@ -120,7 +136,9 @@ export async function fetchSearch(query: string): Promise<Article[]> {
   try {
     const wp = await wpSearchPosts(q, 30);
     if (wp.length >= 0) return wp.map(wpPostToArticle);
-  } catch {}
+  } catch (err) {
+    logWp("fetchSearch", err);
+  }
   return mockSearchArticles(q);
 }
 

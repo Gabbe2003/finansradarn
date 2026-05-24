@@ -9,7 +9,7 @@ import EmailOverlay from "@/components/EmailOverlay";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import { fetchCategories } from "@/lib/content";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se";
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se").replace(/\/+$/, "");
 const SITE_NAME = "FinansRadarn";
 const SITE_DESCRIPTION = "Din finansradar. Nyheter, analys och verktyg för din ekonomi.";
 

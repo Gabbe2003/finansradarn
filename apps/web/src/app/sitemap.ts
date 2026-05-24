@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { fetchCategories, fetchAuthors } from "@/lib/content";
 import { getPosts } from "@/lib/wordpress/client";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se";
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se").replace(/\/+$/, "");
 
 const STATIC_ROUTES: Array<{
   path: string;
@@ -89,8 +89,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     }));
-  } catch {
-    // WP unreachable at build time — keep the rest of the sitemap valid.
+  } catch (err) {
+    // Surface the WP failure in Vercel function logs so future env / network
+    // problems don't silently produce an empty article list.
+    console.error("[sitemap] WP getPosts failed:", err);
   }
 
   return [

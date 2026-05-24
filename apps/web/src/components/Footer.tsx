@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { categories } from "@/lib/data";
+import type { Category } from "@/lib/types";
 
-export default function Footer() {
+interface FooterProps {
+  categories: Category[];
+}
+
+export default function Footer({ categories }: FooterProps) {
   return (
     <footer className="bg-navy text-white mt-auto">
       {/* Gold divider */}
-      <div className="h-1 bg-gradient-to-r from-transparent via-accent to-transparent" />
+      <div className="h-1 bg-linear-to-r from-transparent via-accent to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">

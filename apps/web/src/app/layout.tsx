@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import EmailOverlay from "@/components/EmailOverlay";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
+import { fetchCategories } from "@/lib/content";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se";
 const SITE_NAME = "FinansRadarn";
@@ -95,11 +96,12 @@ const websiteJsonLd = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categories = await fetchCategories();
   return (
     <html
       lang="sv"
@@ -117,9 +119,9 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <BreakingNewsBar />
         </Suspense>
-        <Header />
+        <Header categories={categories} />
         <main className="flex-1">{children}</main>
-        <Footer />
+        <Footer categories={categories} />
         <EmailOverlay />
       </body>
     </html>

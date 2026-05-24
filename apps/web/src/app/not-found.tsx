@@ -1,14 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import {
-  articles as mockArticles,
-  categories,
-  formatDate,
-  formatTime,
-} from "@/lib/data";
-import { getPosts, wpPostToArticle } from "@/lib/wordpress/client";
-import type { Article } from "@/lib/types";
+import { formatDate, formatTime } from "@/lib/data";
+import { fetchArticles, fetchCategories } from "@/lib/content";
 import AnimatedSection from "@/components/AnimatedSection";
 
 export const metadata: Metadata = {
@@ -17,14 +11,6 @@ export const metadata: Metadata = {
     "Sidan du letar efter finns inte. Här är de senaste nyheterna från FinansRadarn istället.",
   robots: { index: false, follow: true },
 };
-
-async function getRecent(): Promise<Article[]> {
-  try {
-    const wpPosts = await getPosts(8);
-    if (wpPosts.length > 0) return wpPosts.map(wpPostToArticle);
-  } catch {}
-  return mockArticles;
-}
 
 function isToday(iso: string): boolean {
   const now = new Date();
@@ -37,7 +23,10 @@ function isToday(iso: string): boolean {
 }
 
 export default async function NotFound() {
-  const recent = await getRecent();
+  const [recent, categories] = await Promise.all([
+    fetchArticles(8),
+    fetchCategories(),
+  ]);
   const todays = recent.filter((a) => isToday(a.publishedAt));
   const hasToday = todays.length > 0;
   const items = (hasToday ? todays : recent).slice(0, 4);

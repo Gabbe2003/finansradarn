@@ -2,12 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  authors,
-  getAuthorBySlug,
-  getArticlesByAuthor,
-  formatDate,
-} from "@/lib/data";
+import { formatDate } from "@/lib/data";
+import { fetchAuthorBySlug, fetchAuthors } from "@/lib/content";
 import ArticleCard from "@/components/ArticleCard";
 import AnimatedSection from "@/components/AnimatedSection";
 
@@ -15,7 +11,8 @@ interface AuthorPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const authors = await fetchAuthors();
   return authors
     .filter((a) => !!a.slug)
     .map((a) => ({ slug: a.slug as string }));
@@ -23,7 +20,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: AuthorPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const author = getAuthorBySlug(slug);
+  const { author } = await fetchAuthorBySlug(slug);
   if (!author) {
     return { title: "Skribenten hittades inte", robots: { index: false, follow: false } };
   }
@@ -44,17 +41,18 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
 
 export default async function AuthorPage({ params }: AuthorPageProps) {
   const { slug } = await params;
-  const author = getAuthorBySlug(slug);
+  const [{ author, articles: authorArticles }, allAuthors] = await Promise.all([
+    fetchAuthorBySlug(slug),
+    fetchAuthors(),
+  ]);
   if (!author) notFound();
 
-  const authorArticles = getArticlesByAuthor(author.id);
   const sorted = [...authorArticles].sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
 
   const lastPublished = sorted[0]?.publishedAt;
-  const otherAuthors = authors.filter((a) => a.id !== author.id);
+  const otherAuthors = allAuthors.filter((a) => a.id !== author.id);
 
   const personJsonLd = {
     "@context": "https://schema.org",
@@ -74,14 +72,11 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
       />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-surface to-background border-b border-border">
+      <section className="bg-linear-to-b from-surface to-background border-b border-border">
         <div className="max-w-5xl mx-auto px-4 pt-10 pb-12">
           <AnimatedSection>
             <div className="flex items-center gap-2 text-sm mb-6">
-              <Link href="/" className="text-muted hover:text-accent transition font-medium">
-                Hem
-              </Link>
+              <Link href="/" className="text-muted hover:text-accent transition font-medium">Hem</Link>
               <span className="text-muted/50">/</span>
               <span className="text-muted">Skribenter</span>
               <span className="text-muted/50">/</span>
@@ -97,12 +92,6 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
                   height={120}
                   className="rounded-full ring-4 ring-accent/30 shadow-lg"
                 />
-                <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent ring-4 ring-background">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-navy" aria-hidden>
-                    <path d="M12 19l7-7-7-7" />
-                    <path d="M19 12H5" transform="rotate(-45 12 12)" />
-                  </svg>
-                </span>
               </div>
 
               <div className="flex-1 min-w-0">
@@ -142,7 +131,6 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
         </div>
       </section>
 
-      {/* Articles + sidebar */}
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -157,10 +145,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
               <AnimatedSection>
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <p className="text-muted text-lg">Inga artiklar publicerade ännu.</p>
-                  <Link
-                    href="/"
-                    className="text-accent hover:underline mt-2 inline-block font-semibold"
-                  >
+                  <Link href="/" className="text-accent hover:underline mt-2 inline-block font-semibold">
                     Tillbaka till startsidan
                   </Link>
                 </div>

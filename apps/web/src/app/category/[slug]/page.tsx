@@ -1,20 +1,22 @@
 import { notFound } from "next/navigation";
-import { categories, getArticlesByCategory, articles } from "@/lib/data";
+import Link from "next/link";
+import { fetchArticlesByCategory, fetchCategories, fetchArticles } from "@/lib/content";
 import ArticleCard from "@/components/ArticleCard";
 import AnimatedSection from "@/components/AnimatedSection";
-import Link from "next/link";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  return categories.map((cat) => ({ slug: cat.slug }));
+export async function generateStaticParams() {
+  const cats = await fetchCategories();
+  return cats.map((cat) => ({ slug: cat.slug }));
 }
 
 export async function generateMetadata({ params }: CategoryPageProps) {
   const { slug } = await params;
-  const category = categories.find((c) => c.slug === slug);
+  const cats = await fetchCategories();
+  const category = cats.find((c) => c.slug === slug);
   if (!category) return { title: "Kategorin hittades inte" };
   return {
     title: `${category.name} — FinansRadarn`,
@@ -24,12 +26,16 @@ export async function generateMetadata({ params }: CategoryPageProps) {
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
-  const category = categories.find((c) => c.slug === slug);
+  const [{ category, articles: categoryArticles }, allCategories, latestAll] =
+    await Promise.all([
+      fetchArticlesByCategory(slug, 30),
+      fetchCategories(),
+      fetchArticles(5),
+    ]);
 
   if (!category) notFound();
 
-  const categoryArticles = getArticlesByCategory(slug);
-  const otherCategories = categories.filter((c) => c.slug !== slug);
+  const otherCategories = allCategories.filter((c) => c.slug !== slug);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -66,7 +72,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {categoryArticles.map((article, i) => (
-                <AnimatedSection key={article.id} delay={i * 0.08}>
+                <AnimatedSection key={article.id} delay={i * 0.06}>
                   <ArticleCard article={article} />
                 </AnimatedSection>
               ))}
@@ -104,7 +110,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 Senaste rubrikerna
               </h3>
               <div>
-                {articles.slice(0, 5).map((article) => (
+                {latestAll.map((article) => (
                   <ArticleCard key={article.id} article={article} variant="compact" />
                 ))}
               </div>

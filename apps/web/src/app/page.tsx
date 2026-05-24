@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { articles as mockArticles, categories, formatDate, formatTime } from "@/lib/data";
-import { getPosts, wpPostToArticle } from "@/lib/wordpress/client";
-import type { Article } from "@/lib/types";
+import { formatDate, formatTime } from "@/lib/data";
+import { fetchArticles, fetchCategories, fetchPopularByPeriod } from "@/lib/content";
+import { fetchMacroIndicators } from "@/lib/macro";
 
 const HOME_TITLE = "FinansRadarn — Nyheter, analys och verktyg för din ekonomi";
 const HOME_DESCRIPTION =
@@ -37,16 +37,27 @@ import NewsTicker from "@/components/NewsTicker";
 import NewsletterBanner from "@/components/NewsletterBanner";
 import ToolsShowcase from "@/components/ToolsShowcase";
 
-async function getArticles(): Promise<Article[]> {
-  try {
-    const wpPosts = await getPosts(20);
-    if (wpPosts.length > 0) return wpPosts.map(wpPostToArticle);
-  } catch {}
-  return mockArticles;
-}
-
 export default async function Home() {
-  const articles = await getArticles();
+  const [articles, categories, popularBuckets, macro] = await Promise.all([
+    fetchArticles(20),
+    fetchCategories(),
+    fetchPopularByPeriod(5),
+    fetchMacroIndicators(),
+  ]);
+
+  // Build the Weekly Stats array from live macro data with static fallbacks.
+  const fmtPct = (v: number, d = 1) =>
+    `${v.toLocaleString("sv-SE", { minimumFractionDigits: d, maximumFractionDigits: d })}%`;
+  const fmtFx = (v: number) =>
+    v.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  const weeklyStats = [
+    { label: "KPIF",         value: fmtPct(4.1, 1),                                change: "+0,2",  up: true  },
+    { label: "Styrränta",    value: macro.policyRate ? fmtPct(macro.policyRate.value, 2) : "3,75%", change: macro.policyRate ? "live" : "+0,25", up: true },
+    { label: "Arbetslöshet", value: fmtPct(5.8, 1),                                change: "-0,4",  up: false },
+    { label: "BNP kv/kv",    value: `+${fmtPct(0.8, 1)}`,                          change: "+0,3",  up: true  },
+    { label: "EUR/SEK",      value: macro.eurSek   ? fmtFx(macro.eurSek.value)   : "11,52", change: macro.eurSek ? "live" : "+0,07",  up: true },
+    { label: "USD/SEK",      value: macro.usdSek   ? fmtFx(macro.usdSek.value)   : "10,30", change: macro.usdSek ? "live" : "+0,05",  up: true },
+  ];
   const leadArticle = articles[0];
   const leftCards = articles.slice(1, 3);
   const feedArticles = articles.slice(3, 7);
@@ -61,7 +72,7 @@ export default async function Home() {
   return (
     <div>
       {/* News ticker + market ticker */}
-      <NewsTicker />
+      <NewsTicker articles={articles} />
       <MarketTicker />
       <div className="border-b border-border">
         <div className="max-w-7xl mx-auto px-4 py-2.5">
@@ -174,7 +185,7 @@ export default async function Home() {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[11px] font-black uppercase tracking-widest text-navy">Mest läst</span>
               </div>
-              <PopularArticles />
+              <PopularArticles buckets={popularBuckets} />
             </AnimatedSection>
 
             <AnimatedSection delay={0.3}>
@@ -305,14 +316,7 @@ export default async function Home() {
             <p className="text-sm text-muted mb-6 ml-4">Senaste makroekonomiska data för Sverige</p>
           </AnimatedSection>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { label: "KPIF", value: "4,1%", change: "+0,2", up: true },
-              { label: "Styrränta", value: "3,75%", change: "+0,25", up: true },
-              { label: "Arbetslöshet", value: "5,8%", change: "-0,4", up: false },
-              { label: "BNP kv/kv", value: "+0,8%", change: "+0,3", up: true },
-              { label: "EUR/SEK", value: "11,52", change: "+0,07", up: true },
-              { label: "OMXS30", value: "2 812", change: "+1,8%", up: true },
-            ].map((stat, i) => (
+            {weeklyStats.map((stat, i) => (
               <AnimatedSection key={stat.label} delay={i * 0.05}>
                 <div className="bg-white p-4 border border-border text-center">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">{stat.label}</p>

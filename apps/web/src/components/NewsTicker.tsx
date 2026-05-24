@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { articles } from "@/lib/data";
+import type { Article } from "@/lib/types";
 
-export default function NewsTicker() {
+interface Props {
+  articles: Article[];
+}
+
+export default function NewsTicker({ articles }: Props) {
   const tickerArticles = articles.slice(0, 8);
+
+  if (tickerArticles.length === 0) return null;
 
   return (
     <div className="bg-navy text-white overflow-hidden border-b border-white/10">

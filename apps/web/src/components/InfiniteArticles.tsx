@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { articles as allArticles } from "@/lib/data";
 import { Article } from "@/lib/types";
 import ArticleCard from "./ArticleCard";
 
@@ -16,33 +15,35 @@ export default function InfiniteArticles({ initialArticles }: InfiniteArticlesPr
   const [displayed, setDisplayed] = useState<Article[]>(initialArticles);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  // The server already rendered the first slice; start paging from the next.
+  const initialPage = Math.max(
+    1,
+    Math.ceil(initialArticles.length / BATCH_SIZE) + 1
+  );
+  const nextPageRef = useRef<number>(initialPage);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const seenIdsRef = useRef<Set<string>>(new Set(initialArticles.map((a) => a.id)));
 
-  // We cycle through all articles to simulate infinite content
-  const loadMore = useCallback(() => {
+  const loadMore = useCallback(async () => {
     if (loading) return;
     setLoading(true);
-
-    // Simulate network delay
-    setTimeout(() => {
-      setDisplayed((prev) => {
-        const nextIndex = prev.length % allArticles.length;
-        const batch: Article[] = [];
-        for (let i = 0; i < BATCH_SIZE; i++) {
-          const srcIndex = (nextIndex + i) % allArticles.length;
-          batch.push({
-            ...allArticles[srcIndex],
-            // Give unique id so React keys don't collide
-            id: `${allArticles[srcIndex].id}-${prev.length + i}`,
-          });
-        }
-        const next = [...prev, ...batch];
-        // Cap at 60 articles
-        if (next.length >= 60) setHasMore(false);
-        return next;
-      });
+    try {
+      const page = nextPageRef.current;
+      const res = await fetch(`/api/posts/feed?page=${page}&per_page=${BATCH_SIZE}`);
+      const data = (await res.json()) as { articles: Article[] };
+      const fresh = (data.articles ?? []).filter((a) => !seenIdsRef.current.has(a.id));
+      if (fresh.length === 0) {
+        setHasMore(false);
+      } else {
+        fresh.forEach((a) => seenIdsRef.current.add(a.id));
+        setDisplayed((prev) => [...prev, ...fresh]);
+        nextPageRef.current = page + 1;
+      }
+    } catch {
+      setHasMore(false);
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   }, [loading]);
 
   useEffect(() => {

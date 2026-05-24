@@ -4,11 +4,17 @@ export interface Article {
   title: string;
   excerpt: string;
   content: string;
+  /** Original HTML body from WP (headings, lists, links preserved). Falls back to plain `content` for mock articles. */
+  contentHtml?: string;
   image: string;
+  /** Optional caption for the featured image (WP `caption.rendered`, stripped to plain text). */
+  imageCaption?: string;
   category: Category;
   author: Author;
   publishedAt: string;
   readTime: number;
+  /** Word count of the article body. */
+  wordCount?: number;
   featured: boolean;
   breaking?: boolean;
   views: ViewStats;

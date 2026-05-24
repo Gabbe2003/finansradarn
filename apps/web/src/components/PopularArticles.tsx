@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { formatViews } from "@/lib/data";
 import type { Article } from "@/lib/types";
 
 type Period = "today" | "twoDays" | "week";
@@ -63,16 +62,9 @@ export default function PopularArticles({ buckets }: Props) {
                 <h4 className="font-serif text-[13px] font-semibold text-navy leading-snug line-clamp-2 group-hover:text-accent transition">
                   {article.title}
                 </h4>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-accent">
-                    {article.category.name}
-                  </span>
-                  {article.views?.[active] ? (
-                    <span className="text-[10px] text-muted">
-                      {formatViews(article.views[active])} visningar
-                    </span>
-                  ) : null}
-                </div>
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-accent mt-0.5 block">
+                  {article.category.name}
+                </span>
               </div>
               <div className="relative w-16 h-12 overflow-hidden bg-gray-100 shrink-0">
                 <Image

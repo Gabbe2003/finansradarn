@@ -66,6 +66,7 @@ export interface WPMedia {
   id: number;
   source_url: string;
   alt_text: string;
+  caption?: { rendered: string };
   media_details?: {
     sizes?: Record<string, { source_url: string; width: number; height: number }>;
   };

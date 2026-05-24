@@ -73,6 +73,20 @@ export async function getPostBySlug(slug: string): Promise<WPPost | null> {
   return posts[0] || null;
 }
 
+export async function getPostsByIds(ids: number[]): Promise<WPPost[]> {
+  if (ids.length === 0) return [];
+  return fetchAPI<WPPost[]>(
+    "posts",
+    {
+      include: ids.join(","),
+      orderby: "include",
+      per_page: String(ids.length),
+      _embed: "wp:featuredmedia,wp:term,author",
+    },
+    { revalidate: 60, tags: [CACHE_TAGS.posts] }
+  );
+}
+
 export async function getPostsByCategory(categoryId: number, perPage = 20): Promise<WPPost[]> {
   return fetchAPI<WPPost[]>(
     "posts",
@@ -222,11 +236,20 @@ export function stripHtml(html: string): string {
   return decodeEntities(html.replace(/<[^>]*>/g, "").replace(/\n/g, " ").trim());
 }
 
+export function countWords(html: string): number {
+  return stripHtml(html).split(/\s+/).filter(Boolean).length;
+}
+
 export function getPostReadTime(post: WPPost): number {
   if (post.read_time) return post.read_time;
   if (post.acf?.read_time) return post.acf.read_time;
-  const words = stripHtml(post.content.rendered).split(/\s+/).length;
+  const words = countWords(post.content.rendered);
   return Math.max(1, Math.ceil(words / 200));
+}
+
+export function getPostImageCaption(post: WPPost): string {
+  const raw = post._embedded?.["wp:featuredmedia"]?.[0]?.caption?.rendered;
+  return stripHtml(raw ?? "");
 }
 
 /** Convert a WPPost (with _embedded) to the frontend Article shape. */
@@ -235,6 +258,7 @@ export function wpPostToArticle(post: WPPost): Article {
   const aut = getPostAuthor(post);
   const catId = String(post._embedded?.["wp:term"]?.[0]?.[0]?.id ?? "0");
   const autId = String(post._embedded?.author?.[0]?.id ?? "0");
+  const caption = getPostImageCaption(post);
 
   return {
     id: String(post.id),
@@ -242,11 +266,14 @@ export function wpPostToArticle(post: WPPost): Article {
     title: stripHtml(post.title.rendered),
     excerpt: stripHtml(post.excerpt.rendered),
     content: stripHtml(post.content.rendered),
+    contentHtml: post.content.rendered,
     image: getPostImageUrl(post),
+    imageCaption: caption || undefined,
     category: { id: catId, name: cat.name, slug: cat.slug, color: cat.color },
     author: { id: autId, name: aut.name, avatar: aut.avatar, role: aut.role, slug: aut.slug, bio: aut.bio },
     publishedAt: post.date,
     readTime: getPostReadTime(post),
+    wordCount: countWords(post.content.rendered),
     featured: post.featured_article ?? post.acf?.featured ?? false,
     breaking: post.breaking ?? post.acf?.breaking ?? false,
     views: post.views ?? { today: 0, twoDays: 0, week: 0 },

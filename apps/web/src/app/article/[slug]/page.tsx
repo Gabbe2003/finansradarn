@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getArticleBySlug, articles, formatDate } from "@/lib/data";
+import { formatDate } from "@/lib/data";
+import { fetchRelatedArticles } from "@/lib/content";
 import { getPostBySlug, getPosts, wpPostToArticle, stripHtml, getPostImageUrl } from "@/lib/wordpress/client";
 import AnimatedSection from "@/components/AnimatedSection";
 import ArticleCharts from "./ArticleCharts";
 import InfiniteArticleReader from "@/components/InfiniteArticleReader";
 import ShareButtons from "@/components/ShareButtons";
+import ViewTracker from "@/components/ViewTracker";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se";
 const SITE_NAME = "FinansRadarn";
@@ -16,25 +18,17 @@ interface ArticlePageProps {
 }
 
 export async function generateStaticParams() {
-  const paths: { slug: string }[] = [];
-
   try {
     const wpPosts = await getPosts(100);
-    wpPosts.forEach((p) => paths.push({ slug: p.slug }));
-  } catch {}
-
-  // Always include mock slugs as fallback
-  articles.forEach((a) => {
-    if (!paths.find((p) => p.slug === a.slug)) paths.push({ slug: a.slug });
-  });
-
-  return paths;
+    return wpPosts.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: ArticlePageProps) {
   const { slug } = await params;
 
-  // Try WordPress + RankMath first
   try {
     const wpPost = await getPostBySlug(slug);
     if (wpPost) {
@@ -65,50 +59,27 @@ export async function generateMetadata({ params }: ArticlePageProps) {
     }
   } catch {}
 
-  // Fallback to mock data
-  const article = getArticleBySlug(slug);
-  if (!article) {
-    return {
-      title: "Artikeln hittades inte",
-      robots: { index: false, follow: false },
-    };
-  }
   return {
-    title: `${article.title} — FinansRadarn`,
-    description: article.excerpt,
-    alternates: { canonical: `/article/${slug}` },
-    openGraph: {
-      title: article.title,
-      description: article.excerpt,
-      images: [{ url: article.image }],
-      locale: "sv_SE",
-      type: "article",
-      url: `/article/${slug}`,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: article.title,
-      description: article.excerpt,
-      images: [article.image],
-    },
+    title: "Artikeln hittades inte",
+    robots: { index: false, follow: false },
   };
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
 
-  // Try WordPress first, fall back to mock data
   let article;
   let dateModified: string | undefined;
+  let wpPostId: number | null = null;
   try {
     const wpPost = await getPostBySlug(slug);
     if (wpPost) {
       article = wpPostToArticle(wpPost);
       dateModified = wpPost.modified;
+      wpPostId = wpPost.id;
     }
   } catch {}
 
-  if (!article) article = getArticleBySlug(slug);
   if (!article) notFound();
 
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
@@ -162,13 +133,16 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     ],
   };
 
-  const paragraphs = article.content.split("\n\n");
-  const firstHalf = paragraphs.slice(0, Math.ceil(paragraphs.length / 2));
-  const secondHalf = paragraphs.slice(Math.ceil(paragraphs.length / 2));
+  // Plain-text paragraph fallback for articles that have no HTML body (mock data).
+  const fallbackParagraphs = article.contentHtml ? [] : article.content.split("\n\n");
 
-  const sameCategory = articles.filter((a) => a.id !== article!.id && a.category.slug === article!.category.slug);
-  const others = articles.filter((a) => a.id !== article!.id && a.category.slug !== article!.category.slug);
-  const relatedPosts = [...sameCategory, ...others].slice(0, 3);
+  // Word count: prefer the precomputed value from WP, otherwise derive it from
+  // the available text so the stats strip always shows the real number.
+  const wordCount =
+    article.wordCount ??
+    article.content.split(/\s+/).filter(Boolean).length;
+
+  const relatedPosts = await fetchRelatedArticles(article.id, article.category.slug, 3);
 
   // Derive a small tag set from category + a static map of related Swedish economy terms
   const TAGS_BY_CATEGORY: Record<string, string[]> = {
@@ -190,6 +164,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <article>
+      {wpPostId !== null && <ViewTracker postId={wpPostId} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleJsonLd) }}
@@ -275,7 +250,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 text-[12px] text-muted border-t border-border/50 pt-3">
             <span className="flex items-center gap-1.5">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              {article.readTime} min läsning · {Math.round(article.content.split(" ").length / 200) * 200}+ ord
+              {article.readTime} min läsning · {wordCount.toLocaleString("sv-SE")} ord
             </span>
             {article.featured && (
               <span className="flex items-center gap-1 text-accent font-semibold ml-auto">
@@ -289,11 +264,16 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {/* Featured Image */}
       <AnimatedSection delay={0.1}>
-        <div className="max-w-5xl mx-auto px-4 mb-10">
+        <figure className="max-w-5xl mx-auto px-4 mb-10">
           <div className="relative aspect-2/1 rounded-2xl overflow-hidden shadow-2xl">
             <Image src={article.image} alt={article.title} fill sizes="(min-width: 1024px) 1024px, 100vw" className="object-cover" priority />
           </div>
-        </div>
+          {article.imageCaption && (
+            <figcaption className="text-center text-[13px] italic text-muted mt-3 max-w-3xl mx-auto">
+              {article.imageCaption}
+            </figcaption>
+          )}
+        </figure>
       </AnimatedSection>
 
       {/* Article Content */}
@@ -309,9 +289,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </p>
             <ol className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {[
-                { href: "#inledning", label: "Inledning" },
+                { href: "#inledning", label: "Artikel" },
                 { href: "#data", label: "Diagram & data" },
-                { href: "#analys", label: "Analys" },
                 { href: "#fler", label: "Fler att läsa" },
               ].map((item, i) => (
                 <li key={item.href} className="flex items-center gap-1.5">
@@ -331,31 +310,24 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </AnimatedSection>
 
         <AnimatedSection delay={0.2}>
-          <div id="inledning" className="prose prose-lg max-w-none scroll-mt-24">
-            {firstHalf.map((paragraph, i) => (
-              <p
-                key={i}
-                className={`mb-5 leading-[1.85] text-gray-700 ${
-                  i === 0 ? "first-letter:text-5xl first-letter:font-black first-letter:text-navy first-letter:float-left first-letter:mr-2 first-letter:mt-1" : ""
-                }`}
-              >
-                {paragraph}
-              </p>
-            ))}
-          </div>
+          {article.contentHtml ? (
+            <div
+              id="inledning"
+              className="article-content scroll-mt-24"
+              dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+            />
+          ) : (
+            <div id="inledning" className="article-content scroll-mt-24">
+              {fallbackParagraphs.map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          )}
         </AnimatedSection>
 
         <AnimatedSection delay={0.1}>
           <div id="data" className="my-10 scroll-mt-24">
             <ArticleCharts categorySlug={article.category.slug} />
-          </div>
-        </AnimatedSection>
-
-        <AnimatedSection>
-          <div id="analys" className="prose prose-lg max-w-none scroll-mt-24">
-            {secondHalf.map((paragraph, i) => (
-              <p key={i} className="mb-5 leading-[1.85] text-gray-700">{paragraph}</p>
-            ))}
           </div>
         </AnimatedSection>
 

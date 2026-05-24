@@ -90,7 +90,7 @@ export default async function Home() {
             {/* Lead article */}
             <AnimatedSection delay={0.05}>
               <Link href={`/article/${leadArticle.slug}`} className="group block">
-                <div className="relative aspect-[16/9] overflow-hidden bg-gray-100 mb-3">
+                <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-gray-100 mb-3">
                   <Image
                     src={leadArticle.image}
                     alt={leadArticle.title}
@@ -114,7 +114,7 @@ export default async function Home() {
               {leftCards.map((article, i) => (
                 <AnimatedSection key={article.id} delay={0.12 + i * 0.06}>
                   <Link href={`/article/${article.slug}`} className="group flex gap-4 py-3.5 first:pt-0">
-                    <div className="relative w-32 h-20 overflow-hidden bg-gray-100 shrink-0">
+                    <div className="relative w-32 h-20 overflow-hidden rounded-lg bg-gray-100 shrink-0">
                       <Image
                         src={article.image}
                         alt={article.title}
@@ -146,14 +146,14 @@ export default async function Home() {
               </div>
 
               <div>
-                {feedArticles.map((article, i) => (
-                  <Link
-                    key={article.id}
-                    href={`/article/${article.slug}`}
-                    className="group block py-3 border-b border-border/60 last:border-0"
-                  >
-                    {i === 0 && (
-                      <div className="relative aspect-[16/7] overflow-hidden bg-gray-100 mb-2">
+                {feedArticles.map((article, i) =>
+                  i === 0 ? (
+                    <Link
+                      key={article.id}
+                      href={`/article/${article.slug}`}
+                      className="group block py-3 border-b border-border/60 last:border-0"
+                    >
+                      <div className="relative aspect-[16/7] overflow-hidden rounded-lg bg-gray-100 mb-2">
                         <Image
                           src={article.image}
                           alt={article.title}
@@ -162,19 +162,44 @@ export default async function Home() {
                           className="object-cover group-hover:scale-[1.03] transition duration-500"
                         />
                       </div>
-                    )}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-muted tabular-nums">{formatTime(article.publishedAt)}</span>
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-accent">{article.category.name}</span>
-                    </div>
-                    <h4 className="font-serif text-[14px] font-semibold text-navy leading-snug group-hover:text-accent transition">
-                      {article.title}
-                    </h4>
-                    <p className="text-[12px] text-muted mt-0.5 line-clamp-1 leading-relaxed">
-                      {article.excerpt}
-                    </p>
-                  </Link>
-                ))}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-muted tabular-nums">{formatTime(article.publishedAt)}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-accent">{article.category.name}</span>
+                      </div>
+                      <h4 className="font-serif text-[14px] font-semibold text-navy leading-snug group-hover:text-accent transition">
+                        {article.title}
+                      </h4>
+                      <p className="text-[12px] text-muted mt-0.5 line-clamp-1 leading-relaxed">
+                        {article.excerpt}
+                      </p>
+                    </Link>
+                  ) : (
+                    <Link
+                      key={article.id}
+                      href={`/article/${article.slug}`}
+                      className="group flex gap-3 py-3 border-b border-border/60 last:border-0"
+                    >
+                      <div className="relative w-24 h-16 overflow-hidden rounded-lg bg-gray-100 shrink-0">
+                        <Image
+                          src={article.image}
+                          alt={article.title}
+                          fill
+                          sizes="96px"
+                          className="object-cover group-hover:scale-[1.03] transition duration-500"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-muted tabular-nums">{formatTime(article.publishedAt)}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-accent">{article.category.name}</span>
+                        </div>
+                        <h4 className="font-serif text-[14px] font-semibold text-navy leading-snug group-hover:text-accent transition line-clamp-2">
+                          {article.title}
+                        </h4>
+                      </div>
+                    </Link>
+                  )
+                )}
               </div>
             </AnimatedSection>
           </div>
@@ -233,7 +258,7 @@ export default async function Home() {
             {editorPick && (
             <AnimatedSection delay={0.1}>
               <Link href={`/article/${editorPick.slug}`} className="group block">
-                <div className="relative aspect-[3/2] overflow-hidden bg-gray-100">
+                <div className="relative aspect-[3/2] overflow-hidden rounded-lg bg-gray-100">
                   <Image src={editorPick.image} alt={editorPick.title} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover group-hover:scale-[1.03] transition duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/25 to-transparent" />
                   <div className="absolute top-3 left-3 bg-accent text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
@@ -259,7 +284,7 @@ export default async function Home() {
                       <span className="text-[26px] font-black text-border/60 group-hover:text-accent/30 transition tabular-nums leading-none pt-0.5 w-7 shrink-0 select-none">
                         {i + 1}
                       </span>
-                      <div className="relative w-32 h-20 overflow-hidden bg-gray-100 shrink-0">
+                      <div className="relative w-32 h-20 overflow-hidden rounded-lg bg-gray-100 shrink-0">
                         <Image src={article.image} alt={article.title} fill sizes="128px" className="object-cover group-hover:scale-[1.03] transition duration-500" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -278,11 +303,14 @@ export default async function Home() {
                 <div className="flex-1 border-t border-border/50" />
               </div>
 
-              {/* Plain news items — no image, no rank */}
+              {/* Plain news items with small thumb */}
               <div className="divide-y divide-border/60">
                 {latestNews.map((article, i) => (
                   <AnimatedSection key={article.id} delay={0.35 + i * 0.06}>
                     <Link href={`/article/${article.slug}`} className="group flex items-start gap-2.5 py-2.5 first:pt-0">
+                      <div className="relative w-20 h-14 overflow-hidden rounded-lg bg-gray-100 shrink-0">
+                        <Image src={article.image} alt={article.title} fill sizes="80px" className="object-cover group-hover:scale-[1.03] transition duration-500" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-[10px] font-bold text-muted tabular-nums">{formatTime(article.publishedAt)}</span>

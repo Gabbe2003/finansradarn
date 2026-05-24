@@ -12,7 +12,7 @@ export default function ArticleCard({ article, variant = "default" }: ArticleCar
   if (variant === "horizontal") {
     return (
       <Link href={`/article/${article.slug}`} className="group flex gap-4 py-4 border-b border-border last:border-0">
-        <div className="relative w-28 h-20 shrink-0 overflow-hidden bg-gray-100">
+        <div className="relative w-28 h-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
           <Image
             src={article.image}
             alt={article.title}

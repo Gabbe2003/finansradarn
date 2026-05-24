@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { articles as mockArticles } from "@/lib/data";
 import { getPosts, wpPostToArticle } from "@/lib/wordpress/client";
 import type { Article } from "@/lib/types";
 
@@ -8,9 +7,10 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 async function fetchRecentArticles(): Promise<Article[]> {
   try {
     const wpPosts = await getPosts(15);
-    if (wpPosts.length > 0) return wpPosts.map(wpPostToArticle);
-  } catch {}
-  return mockArticles;
+    return wpPosts.map(wpPostToArticle);
+  } catch {
+    return [];
+  }
 }
 
 function isBreaking(a: Article): boolean {

@@ -1,18 +1,45 @@
 import { WPPost, WPCategory, WPAuthor, WPMedia } from "./types";
-import type { Article } from "@/lib/types";
+import type { Article, Author, Category } from "@/lib/types";
 
-const WP_URL = process.env.NEXT_PUBLIC_WP_URL || "https://finansradarn.se";
+// Accept any of: "https://cms.finansradarn.se", trailing slash, or already
+// includes "/wp-json". Strip whatever the user gave us back to the bare origin.
+const RAW_WP = (process.env.NEXT_PUBLIC_WP_URL || "https://finansradarn.se").trim();
+const WP_URL = RAW_WP.replace(/\/+$/, "").replace(/\/wp-json(\/wp\/v2)?$/, "");
 const API = `${WP_URL}/wp-json/wp/v2`;
 
-async function fetchAPI<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+// Cache tags — used by /api/revalidate so WordPress can purge precisely.
+export const CACHE_TAGS = {
+  posts: "wp:posts",
+  categories: "wp:categories",
+  authors: "wp:authors",
+  post: (slug: string) => `wp:post:${slug}`,
+  category: (slug: string) => `wp:category:${slug}`,
+  author: (slug: string) => `wp:author:${slug}`,
+} as const;
+
+async function fetchAPI<T>(
+  endpoint: string,
+  params: Record<string, string> = {},
+  opts: { revalidate?: number | false; tags?: string[] } = {}
+): Promise<T> {
   const url = new URL(`${API}/${endpoint}`);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
 
-  const res = await fetch(url.toString(), {
-    next: { revalidate: 60 }, // ISR: revalidate every 60 seconds
-  });
+  const init: RequestInit & {
+    next?: { revalidate?: number | false; tags?: string[] };
+  } = {};
+  if (opts.revalidate === false) {
+    init.cache = "no-store";
+  } else {
+    init.next = {
+      revalidate: opts.revalidate ?? 60,
+      ...(opts.tags ? { tags: opts.tags } : {}),
+    };
+  }
+
+  const res = await fetch(url.toString(), init);
 
   if (!res.ok) {
     throw new Error(`WP API error: ${res.status} ${res.statusText}`);
@@ -23,47 +50,83 @@ async function fetchAPI<T>(endpoint: string, params: Record<string, string> = {}
 
 // Posts
 export async function getPosts(perPage = 20, page = 1): Promise<WPPost[]> {
-  return fetchAPI<WPPost[]>("posts", {
-    per_page: String(perPage),
-    page: String(page),
-    _embed: "wp:featuredmedia,wp:term,author",
-  });
+  return fetchAPI<WPPost[]>(
+    "posts",
+    {
+      per_page: String(perPage),
+      page: String(page),
+      _embed: "wp:featuredmedia,wp:term,author",
+    },
+    { revalidate: 60, tags: [CACHE_TAGS.posts] }
+  );
 }
 
 export async function getPostBySlug(slug: string): Promise<WPPost | null> {
-  const posts = await fetchAPI<WPPost[]>("posts", {
-    slug,
-    _embed: "wp:featuredmedia,wp:term,author",
-  });
+  const posts = await fetchAPI<WPPost[]>(
+    "posts",
+    {
+      slug,
+      _embed: "wp:featuredmedia,wp:term,author",
+    },
+    { revalidate: 60, tags: [CACHE_TAGS.posts, CACHE_TAGS.post(slug)] }
+  );
   return posts[0] || null;
 }
 
 export async function getPostsByCategory(categoryId: number, perPage = 20): Promise<WPPost[]> {
-  return fetchAPI<WPPost[]>("posts", {
-    categories: String(categoryId),
-    per_page: String(perPage),
-    _embed: "wp:featuredmedia,wp:term,author",
-  });
+  return fetchAPI<WPPost[]>(
+    "posts",
+    {
+      categories: String(categoryId),
+      per_page: String(perPage),
+      _embed: "wp:featuredmedia,wp:term,author",
+    },
+    { revalidate: 60, tags: [CACHE_TAGS.posts] }
+  );
 }
 
-// Categories
+export async function searchPosts(query: string, perPage = 30): Promise<WPPost[]> {
+  return fetchAPI<WPPost[]>(
+    "posts",
+    {
+      search: query,
+      per_page: String(perPage),
+      _embed: "wp:featuredmedia,wp:term,author",
+    },
+    { revalidate: 30, tags: [CACHE_TAGS.posts] }
+  );
+}
+
+// Categories — change rarely, 1h cache
 export async function getCategories(): Promise<WPCategory[]> {
-  return fetchAPI<WPCategory[]>("categories", { per_page: "100", hide_empty: "false" });
+  return fetchAPI<WPCategory[]>(
+    "categories",
+    { per_page: "100", hide_empty: "false" },
+    { revalidate: 3600, tags: [CACHE_TAGS.categories] }
+  );
 }
 
 export async function getCategoryBySlug(slug: string): Promise<WPCategory | null> {
-  const cats = await fetchAPI<WPCategory[]>("categories", { slug });
+  const cats = await fetchAPI<WPCategory[]>(
+    "categories",
+    { slug },
+    { revalidate: 3600, tags: [CACHE_TAGS.categories, CACHE_TAGS.category(slug)] }
+  );
   return cats[0] || null;
 }
 
-// Authors
+// Authors — change rarely, 1h cache
 export async function getAuthors(): Promise<WPAuthor[]> {
-  return fetchAPI<WPAuthor[]>("users", { per_page: "100" });
+  return fetchAPI<WPAuthor[]>(
+    "users",
+    { per_page: "100" },
+    { revalidate: 3600, tags: [CACHE_TAGS.authors] }
+  );
 }
 
 // Media
 export async function getMedia(id: number): Promise<WPMedia> {
-  return fetchAPI<WPMedia>(`media/${id}`);
+  return fetchAPI<WPMedia>(`media/${id}`, {}, { revalidate: 3600 });
 }
 
 // Helpers
@@ -78,7 +141,7 @@ export function getPostImageUrl(post: WPPost): string {
 export function getPostCategory(post: WPPost): { name: string; slug: string; color: string } {
   const term = post._embedded?.["wp:term"]?.[0]?.[0];
   return {
-    name: term?.name || "Okategoriserat",
+    name: decodeEntities(term?.name) || "Okategoriserat",
     slug: term?.slug || "okategoriserat",
     color: term?.acf?.color || "#1D4ED8",
   };
@@ -87,29 +150,76 @@ export function getPostCategory(post: WPPost): { name: string; slug: string; col
 export function getPostAuthor(post: WPPost): { name: string; avatar: string; role: string; slug: string; bio: string } {
   const author = post._embedded?.author?.[0];
   return {
-    name: author?.name || "Redaktionen",
+    name: decodeEntities(author?.name) || "Redaktionen",
     avatar: author?.avatar_urls?.["96"] || "https://i.pravatar.cc/150?img=1",
-    role: author?.acf?.role || "Redaktör",
+    role: decodeEntities(author?.acf?.role) || "Redaktör",
     slug: author?.slug || "redaktionen",
-    bio: author?.description || "",
+    bio: decodeEntities(author?.description),
+  };
+}
+
+/** Convert a WPCategory to the frontend Category shape. */
+export function wpCategoryToCategory(cat: WPCategory): Category {
+  return {
+    id: String(cat.id),
+    name: decodeEntities(cat.name),
+    slug: cat.slug,
+    color: cat.acf?.color || "#1D4ED8",
+  };
+}
+
+/** Convert a WPAuthor to the frontend Author shape. */
+export function wpAuthorToAuthor(user: WPAuthor): Author {
+  return {
+    id: String(user.id),
+    name: decodeEntities(user.name),
+    avatar: user.avatar_urls?.["96"] || "https://i.pravatar.cc/150?img=1",
+    role: decodeEntities(user.acf?.role) || "Redaktör",
+    slug: user.slug,
+    bio: decodeEntities(user.description),
   };
 }
 
 export async function getAuthorBySlug(slug: string): Promise<WPAuthor | null> {
-  const users = await fetchAPI<WPAuthor[]>("users", { slug });
+  const users = await fetchAPI<WPAuthor[]>(
+    "users",
+    { slug },
+    { revalidate: 3600, tags: [CACHE_TAGS.authors, CACHE_TAGS.author(slug)] }
+  );
   return users[0] || null;
 }
 
 export async function getPostsByAuthor(authorId: number, perPage = 20): Promise<WPPost[]> {
-  return fetchAPI<WPPost[]>("posts", {
-    author: String(authorId),
-    per_page: String(perPage),
-    _embed: "wp:featuredmedia,wp:term,author",
-  });
+  return fetchAPI<WPPost[]>(
+    "posts",
+    {
+      author: String(authorId),
+      per_page: String(perPage),
+      _embed: "wp:featuredmedia,wp:term,author",
+    },
+    { revalidate: 60, tags: [CACHE_TAGS.posts] }
+  );
+}
+
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+
+export function decodeEntities(s: string | undefined | null): string {
+  if (!s) return "";
+  return s
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&([a-zA-Z]+);/g, (m, name) => HTML_ENTITIES[name.toLowerCase()] ?? m);
 }
 
 export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").replace(/\n/g, " ").trim();
+  return decodeEntities(html.replace(/<[^>]*>/g, "").replace(/\n/g, " ").trim());
 }
 
 export function getPostReadTime(post: WPPost): number {

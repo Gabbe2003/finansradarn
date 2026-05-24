@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { hostname: "images.unsplash.com" },
       { hostname: "i.pravatar.cc" },
+      { hostname: "cms.finansradarn.se" },
+      { hostname: "finansradarn.se" },
+      { hostname: "secure.gravatar.com" },
     ],
   },
 };

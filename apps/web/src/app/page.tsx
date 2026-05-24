@@ -51,6 +51,12 @@ export default async function Home() {
   const leftCards = articles.slice(1, 3);
   const feedArticles = articles.slice(3, 7);
   const initialArticles = articles.slice(3, 9);
+  // Editor's-picks slots — degrade gracefully when the site has fewer than 15 articles
+  const editorPick = articles[8] ?? articles[1] ?? null;
+  const rankedPicks = articles.slice(9, 11);
+  const latestNews = articles.slice(12, 15);
+  const hasEditorialSection =
+    editorPick !== null || rankedPicks.length > 0 || latestNews.length > 0;
 
   return (
     <div>
@@ -64,6 +70,7 @@ export default async function Home() {
       </div>
 
       {/* Hero — DI-style 3-column layout */}
+      {leadArticle ? (
       <section className="max-w-7xl mx-auto px-4 pt-6 pb-2">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:divide-x divide-border">
 
@@ -179,6 +186,12 @@ export default async function Home() {
 
         </div>
       </section>
+      ) : (
+        <section className="max-w-7xl mx-auto px-4 py-16 text-center">
+          <p className="font-serif text-xl text-navy mb-1">Inga artiklar publicerade ännu.</p>
+          <p className="text-sm text-muted">Så fort din redaktion publicerar i WordPress dyker det upp här.</p>
+        </section>
+      )}
 
       {/* Divider */}
       <div className="max-w-7xl mx-auto px-4"><div className="border-b border-border" /></div>
@@ -187,6 +200,7 @@ export default async function Home() {
       <ToolsShowcase />
 
       {/* Editor's Picks — large feature layout */}
+      {hasEditorialSection && (
       <section className="bg-surface border-y border-border py-10">
         <div className="max-w-7xl mx-auto px-4">
           <AnimatedSection>
@@ -205,28 +219,30 @@ export default async function Home() {
           </AnimatedSection>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Big feature with gradient overlay */}
+            {editorPick && (
             <AnimatedSection delay={0.1}>
-              <Link href={`/article/${articles[8].slug}`} className="group block">
+              <Link href={`/article/${editorPick.slug}`} className="group block">
                 <div className="relative aspect-[3/2] overflow-hidden bg-gray-100">
-                  <Image src={articles[8].image} alt={articles[8].title} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover group-hover:scale-[1.03] transition duration-500" />
+                  <Image src={editorPick.image} alt={editorPick.title} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover group-hover:scale-[1.03] transition duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/25 to-transparent" />
                   <div className="absolute top-3 left-3 bg-accent text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
                     Redaktörens val
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">{articles[8].category.name}</span>
-                    <h3 className="font-serif text-lg font-bold text-white mt-1 leading-snug group-hover:text-white/90 transition">{articles[8].title}</h3>
-                    <p className="text-[12px] text-white/65 mt-1 line-clamp-1 leading-relaxed">{articles[8].excerpt}</p>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/60">{editorPick.category.name}</span>
+                    <h3 className="font-serif text-lg font-bold text-white mt-1 leading-snug group-hover:text-white/90 transition">{editorPick.title}</h3>
+                    <p className="text-[12px] text-white/65 mt-1 line-clamp-1 leading-relaxed">{editorPick.excerpt}</p>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted mt-2">{articles[8].author.name} · {formatDate(articles[8].publishedAt)}</p>
+                <p className="text-[11px] text-muted mt-2">{editorPick.author.name} · {formatDate(editorPick.publishedAt)}</p>
               </Link>
             </AnimatedSection>
+            )}
             {/* Right column — 2 editorial picks + plain news items */}
             <div className="flex flex-col">
               {/* Ranked editorial picks */}
               <div className="divide-y divide-border">
-                {articles.slice(9, 11).map((article, i) => (
+                {rankedPicks.map((article, i) => (
                   <AnimatedSection key={article.id} delay={0.15 + i * 0.08}>
                     <Link href={`/article/${article.slug}`} className="group flex items-start gap-3 py-4 first:pt-0">
                       <span className="text-[26px] font-black text-border/60 group-hover:text-accent/30 transition tabular-nums leading-none pt-0.5 w-7 shrink-0 select-none">
@@ -253,7 +269,7 @@ export default async function Home() {
 
               {/* Plain news items — no image, no rank */}
               <div className="divide-y divide-border/60">
-                {articles.slice(12, 15).map((article, i) => (
+                {latestNews.map((article, i) => (
                   <AnimatedSection key={article.id} delay={0.35 + i * 0.06}>
                     <Link href={`/article/${article.slug}`} className="group flex items-start gap-2.5 py-2.5 first:pt-0">
                       <div className="flex-1 min-w-0">
@@ -271,6 +287,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Newsletter Banner */}
       <AnimatedSection>

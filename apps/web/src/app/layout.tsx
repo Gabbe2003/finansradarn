@@ -107,7 +107,7 @@ export default async function RootLayout({
       lang="sv"
       className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="h-full flex flex-col bg-background text-foreground overflow-hidden">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
@@ -120,8 +120,10 @@ export default async function RootLayout({
           <BreakingNewsBar />
         </Suspense>
         <Header categories={categories} />
-        <main className="flex-1">{children}</main>
-        <Footer categories={categories} />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+          <Footer categories={categories} />
+        </main>
         <EmailOverlay />
       </body>
     </html>

@@ -2,8 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/data";
-import { fetchRelatedArticles } from "@/lib/content";
-import { getPostBySlug, getPosts, wpPostToArticle, stripHtml, getPostImageUrl } from "@/lib/wordpress/client";
+import { fetchArticles } from "@/lib/content";
+import { getPostBySlug, getPosts, getPostsByIds, wpPostToArticle, stripHtml, getPostImageUrl } from "@/lib/wordpress/client";
+import { fetchAds } from "@/lib/ads/client";
+import type { Article } from "@/lib/types";
 import AnimatedSection from "@/components/AnimatedSection";
 import ArticleCharts from "./ArticleCharts";
 import InfiniteArticleReader from "@/components/InfiniteArticleReader";
@@ -82,6 +84,24 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   if (!article) notFound();
 
+  let adArticle: Article | null = null;
+  let adId: number | null = null;
+  try {
+    const scrollAdsResponse = await fetchAds("scroll");
+    const candidate = (scrollAdsResponse?.ads ?? []).find(
+      (a) =>
+        a.linked_post?.id != null &&
+        String(a.linked_post.id) !== article!.id
+    );
+    if (candidate?.linked_post?.id) {
+      const wpPosts = await getPostsByIds([candidate.linked_post.id]);
+      if (wpPosts[0]) {
+        adArticle = wpPostToArticle(wpPosts[0]);
+        adId = candidate.id;
+      }
+    }
+  } catch {}
+
   const articleUrl = `${SITE_URL}/article/${article.slug}`;
   const newsArticleJsonLd = {
     "@context": "https://schema.org",
@@ -142,7 +162,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     article.wordCount ??
     article.content.split(/\s+/).filter(Boolean).length;
 
-  const relatedPosts = await fetchRelatedArticles(article.id, article.category.slug, 3);
+  const pool = (await fetchArticles(30)).filter((a) => a.id !== article.id);
+  const randomPosts = [...pool].sort(() => Math.random() - 0.5).slice(0, 6);
 
   // Derive a small tag set from category + a static map of related Swedish economy terms
   const TAGS_BY_CATEGORY: Record<string, string[]> = {
@@ -368,27 +389,45 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <section id="fler" className="border-t border-border bg-surface py-10 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4">
           <AnimatedSection>
-            <h2 className="text-lg font-black mb-6 flex items-center gap-3">
-              <span className="w-1 h-5 bg-accent rounded-full" />
-              Fler att läsa
-            </h2>
+            <div className="mb-7">
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent">
+                Fortsätt läsa
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-navy mt-0.5 leading-none">
+                Fler att läsa
+              </h2>
+            </div>
           </AnimatedSection>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {relatedPosts.map((related, i) => (
-              <AnimatedSection key={related.id} delay={i * 0.08}>
-                <Link href={`/article/${related.slug}`} className="group block">
-                  <div className="relative aspect-video overflow-hidden bg-gray-100 mb-3">
-                    <Image src={related.image} alt={related.title} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover group-hover:scale-[1.03] transition duration-500" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+            {randomPosts.map((related, i) => (
+              <AnimatedSection key={related.id} delay={i * 0.05}>
+                <Link
+                  href={`/article/${related.slug}`}
+                  className="group flex gap-4 items-start py-2 border-b border-border/60 last:border-0"
+                >
+                  <div className="relative w-28 h-20 sm:w-32 sm:h-24 shrink-0 overflow-hidden bg-gray-100">
+                    <Image
+                      src={related.image}
+                      alt={related.title}
+                      fill
+                      sizes="(min-width: 640px) 128px, 112px"
+                      className="object-cover group-hover:scale-[1.04] transition duration-500"
+                    />
                   </div>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: related.category.color }}>
-                    {related.category.name}
-                  </span>
-                  <h3 className="font-serif text-[14px] font-semibold text-navy mt-1 leading-snug line-clamp-2 group-hover:text-accent transition">
-                    {related.title}
-                  </h3>
-                  <p className="text-[11px] text-muted mt-1.5">
-                    {related.author.name} · {formatDate(related.publishedAt)}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className="text-[9px] font-semibold uppercase tracking-widest"
+                      style={{ color: related.category.color }}
+                    >
+                      {related.category.name}
+                    </span>
+                    <h3 className="font-serif text-[14px] font-semibold text-navy mt-1 leading-snug line-clamp-2 group-hover:text-accent transition">
+                      {related.title}
+                    </h3>
+                    <p className="text-[11px] text-muted mt-1.5">
+                      {formatDate(related.publishedAt)}
+                    </p>
+                  </div>
                 </Link>
               </AnimatedSection>
             ))}
@@ -397,7 +436,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </section>
 
       {/* Infinite article reader */}
-      <InfiniteArticleReader currentArticle={article} />
+      <InfiniteArticleReader
+        currentArticle={article}
+        adArticle={adArticle}
+        adId={adId}
+      />
     </article>
   );
 }

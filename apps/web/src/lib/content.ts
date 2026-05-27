@@ -24,7 +24,9 @@ const RAW_WP_BASE = (process.env.NEXT_PUBLIC_WP_URL || "https://finansradarn.se"
 const WP_BASE = RAW_WP_BASE.replace(/\/+$/, "").replace(/\/wp-json(\/wp\/v2)?$/, "");
 
 function logWp(scope: string, err: unknown): void {
-  console.error(`[content:${scope}] WP fetch failed:`, err);
+  const code = (err as { code?: string })?.code;
+  const log = code === "WP_SG_CAPTCHA" ? console.warn : console.error;
+  log(`[content:${scope}] WP fetch failed:`, err);
 }
 
 export async function fetchArticles(perPage = 20): Promise<Article[]> {
@@ -118,6 +120,8 @@ async function fetchPopularIds(
       { next: { revalidate: 300 } }
     );
     if (!res.ok) return [];
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) return [];
     const data = (await res.json()) as { items?: PvtPopularItem[] };
     return (data.items ?? []).map((i) => ({ id: i.id, views: i.period_views }));
   } catch (err) {

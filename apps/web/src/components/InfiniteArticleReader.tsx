@@ -5,14 +5,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatDate } from "@/lib/data";
 import { Article } from "@/lib/types";
+import { trackImpressionUrl } from "@/lib/ads/client";
 import ArticleCharts from "@/app/article/[slug]/ArticleCharts";
 
 interface InfiniteArticleReaderProps {
   currentArticle: Article;
+  adArticle?: Article | null;
+  adId?: number | null;
 }
 
-function FullArticle({ article }: { article: Article }) {
+function FullArticle({
+  article,
+  adId,
+}: {
+  article: Article;
+  adId?: number | null;
+}) {
   const ref = useRef<HTMLElement>(null);
+  const impressionFired = useRef(false);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -25,6 +35,13 @@ function FullArticle({ article }: { article: Article }) {
             window.history.replaceState(null, "", url);
             document.title = `${article.title} - FinansRadarn`;
           }
+          if (adId && !impressionFired.current) {
+            impressionFired.current = true;
+            fetch(trackImpressionUrl("scroll", adId), {
+              method: "POST",
+              keepalive: true,
+            }).catch(() => {});
+          }
         }
       },
       { threshold: 0.3 }
@@ -32,7 +49,7 @@ function FullArticle({ article }: { article: Article }) {
 
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [article.slug, article.title]);
+  }, [article.slug, article.title, adId]);
 
   // Plain-text paragraph fallback when the article lacks a WP HTML body.
   const fallbackParagraphs = article.contentHtml ? [] : article.content.split("\n\n");
@@ -149,14 +166,30 @@ function FullArticle({ article }: { article: Article }) {
 }
 
 const BATCH_SIZE = 1;
+const AD_REPEAT_BUFFER = 5;
 
-export default function InfiniteArticleReader({ currentArticle }: InfiniteArticleReaderProps) {
+export default function InfiniteArticleReader({
+  currentArticle,
+  adArticle = null,
+  adId = null,
+}: InfiniteArticleReaderProps) {
   const [loaded, setLoaded] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef<number>(1);
   const loaderRef = useRef<HTMLDivElement>(null);
-  const seenIdsRef = useRef<Set<string>>(new Set([currentArticle.id]));
+  const seenIdsRef = useRef<Set<string>>(
+    new Set([currentArticle.id, ...(adArticle ? [adArticle.id] : [])])
+  );
+  const adReleasedRef = useRef(false);
+
+  useEffect(() => {
+    if (!adArticle || adReleasedRef.current) return;
+    if (loaded.length >= AD_REPEAT_BUFFER) {
+      seenIdsRef.current.delete(adArticle.id);
+      adReleasedRef.current = true;
+    }
+  }, [loaded.length, adArticle]);
 
   const loadNext = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -202,6 +235,13 @@ export default function InfiniteArticleReader({ currentArticle }: InfiniteArticl
 
   return (
     <div>
+      {adArticle ? (
+        <FullArticle
+          key={`ad-${adArticle.id}`}
+          article={adArticle}
+          adId={adId}
+        />
+      ) : null}
       {loaded.map((article) => (
         <FullArticle key={article.id} article={article} />
       ))}

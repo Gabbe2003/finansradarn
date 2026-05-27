@@ -45,7 +45,34 @@ async function fetchAPI<T>(
     throw new Error(`WP API error: ${res.status} ${res.statusText}`);
   }
 
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const body = await res.text();
+    const isSgCaptcha =
+      body.includes("sgcaptcha") || body.includes(".well-known/sgcaptcha");
+    if (isSgCaptcha) {
+      warnSgCaptchaOnce(endpoint);
+      return [] as unknown as T;
+    }
+    const err = new Error(
+      `WP returned non-JSON (content-type: ${contentType}) for ${endpoint}`
+    ) as Error & { code?: string };
+    err.code = "WP_NON_JSON";
+    throw err;
+  }
+
   return res.json();
+}
+
+let sgCaptchaWarned = false;
+function warnSgCaptchaOnce(endpoint: string): void {
+  if (sgCaptchaWarned) return;
+  sgCaptchaWarned = true;
+  console.warn(
+    `[wp] SiteGround CAPTCHA is blocking /wp-json/* (first hit: ${endpoint}). ` +
+      `Whitelist /wp-json/* in Site Tools → Security, or add SG Security plugin URL exception. ` +
+      `Returning empty results in the meantime.`
+  );
 }
 
 // Posts

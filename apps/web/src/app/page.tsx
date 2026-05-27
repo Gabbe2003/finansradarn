@@ -36,14 +36,24 @@ import PopularArticles from "@/components/PopularArticles";
 import NewsTicker from "@/components/NewsTicker";
 import NewsletterBanner from "@/components/NewsletterBanner";
 import ToolsShowcase from "@/components/ToolsShowcase";
+import HeaderAd from "@/components/ads/HeaderAd";
+import PopupAd from "@/components/ads/PopupAd";
+import { fetchAds } from "@/lib/ads/client";
 
 export default async function Home() {
-  const [articles, categories, popularBuckets, macro] = await Promise.all([
+  const [articles, categories, popularBuckets, macro, headerAdsResponse, popupAdsResponse] = await Promise.all([
     fetchArticles(20),
     fetchCategories(),
     fetchPopularByPeriod(5),
     fetchMacroIndicators(),
+    fetchAds("header"),
+    fetchAds("popup"),
   ]);
+  const headerAds = headerAdsResponse?.ads ?? [];
+  const headerAdsMode = headerAdsResponse?.display_mode ?? "queue";
+  const popupAds = popupAdsResponse?.ads ?? [];
+  const popupAdsMode = popupAdsResponse?.display_mode ?? "random";
+  const popupConfig = popupAdsResponse?.popup_config;
 
   // Build the Weekly Stats array from live macro data with static fallbacks.
   const fmtPct = (v: number, d = 1) =>
@@ -71,9 +81,9 @@ export default async function Home() {
 
   return (
     <div>
-      {/* News ticker + market ticker */}
-      <NewsTicker articles={articles} />
+      {/* Market ticker */}
       <MarketTicker />
+      <HeaderAd ads={headerAds} displayMode={headerAdsMode} />
       <div className="border-b border-border">
         <div className="max-w-7xl mx-auto px-4 py-2.5">
           <KeyMetrics />
@@ -228,6 +238,9 @@ export default async function Home() {
           <p className="text-sm text-muted">Så fort din redaktion publicerar i WordPress dyker det upp här.</p>
         </section>
       )}
+
+      {/* News ticker — sits at the foot of the hero block */}
+      <NewsTicker articles={articles} />
 
       {/* Divider */}
       <div className="max-w-7xl mx-auto px-4"><div className="border-b border-border" /></div>
@@ -412,6 +425,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <PopupAd ads={popupAds} displayMode={popupAdsMode} config={popupConfig} />
     </div>
   );
 }

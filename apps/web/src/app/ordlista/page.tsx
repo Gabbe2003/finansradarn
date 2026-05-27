@@ -107,7 +107,7 @@ export default function GlossaryPage() {
             if (!terms) return null;
             return (
               <div key={letter} id={`letter-${letter}`} className="scroll-mt-24">
-                <div className="sticky top-[120px] bg-background z-10 py-2 border-b border-border">
+                <div className="sticky top-0 bg-background z-10 py-2 border-b border-border">
                   <span className="text-2xl font-black text-accent">{letter}</span>
                 </div>
                 {terms.map((term) => (

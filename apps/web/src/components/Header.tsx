@@ -4,13 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import type { Category } from "@/lib/types";
+import type { Ad } from "@/lib/ads/types";
 import EmailOverlay from "@/components/EmailOverlay";
+import HeaderAd from "@/components/ads/HeaderAd";
 
 interface HeaderProps {
   categories: Category[];
+  headerAds?: Ad[];
+  headerAdsMode?: "queue" | "random";
 }
 
-export default function Header({ categories }: HeaderProps) {
+export default function Header({
+  categories,
+  headerAds = [],
+  headerAdsMode = "queue",
+}: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,6 +162,7 @@ export default function Header({ categories }: HeaderProps) {
           </ul>
         </nav>
       )}
+      <HeaderAd ads={headerAds} displayMode={headerAdsMode} />
     </header>
 
     <EmailOverlay autoOpen={false} forceOpen={newsletterOpen} onForceClose={() => setNewsletterOpen(false)} />

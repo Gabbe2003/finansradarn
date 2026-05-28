@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import EmailOverlay from "@/components/EmailOverlay";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import { fetchCategories } from "@/lib/content";
+import { fetchAds } from "@/lib/ads/client";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se").replace(/\/+$/, "");
 const SITE_NAME = "FinansRadarn";
@@ -101,7 +102,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const categories = await fetchCategories();
+  const [categories, headerAdsResponse] = await Promise.all([
+    fetchCategories(),
+    fetchAds("header"),
+  ]);
+  const headerAds = headerAdsResponse?.ads ?? [];
+  const headerAdsMode = headerAdsResponse?.display_mode ?? "queue";
   return (
     <html
       lang="sv"
@@ -119,7 +125,7 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <BreakingNewsBar />
         </Suspense>
-        <Header categories={categories} />
+        <Header categories={categories} headerAds={headerAds} headerAdsMode={headerAdsMode} />
         <main className="flex-1">{children}</main>
         <Footer categories={categories} />
         <EmailOverlay />

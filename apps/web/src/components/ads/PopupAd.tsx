@@ -106,18 +106,12 @@ export default function PopupAd({
 
   useEffect(() => {
     if (!ad || open) return;
-    const scrollEl: HTMLElement | Window =
-      document.querySelector("main") ?? window;
-    const getTop = () =>
-      scrollEl === window
-        ? window.scrollY
-        : (scrollEl as HTMLElement).scrollTop;
     const check = () => {
-      if (getTop() >= scrollThreshold) setOpen(true);
+      if (window.scrollY >= scrollThreshold) setOpen(true);
     };
     check();
-    scrollEl.addEventListener("scroll", check, { passive: true });
-    return () => scrollEl.removeEventListener("scroll", check);
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
   }, [ad, open, scrollThreshold]);
 
   useEffect(() => {

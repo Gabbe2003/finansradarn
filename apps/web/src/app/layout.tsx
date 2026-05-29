@@ -9,6 +9,7 @@ import EmailOverlay from "@/components/EmailOverlay";
 import BreakingNewsBar from "@/components/BreakingNewsBar";
 import { fetchCategories } from "@/lib/content";
 import { fetchAds } from "@/lib/ads/client";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://finansradarn.se").replace(/\/+$/, "");
 const SITE_NAME = "FinansRadarn";
@@ -129,6 +130,9 @@ export default async function RootLayout({
         <main className="flex-1">{children}</main>
         <Footer categories={categories} />
         <EmailOverlay />
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
       </body>
     </html>
   );
